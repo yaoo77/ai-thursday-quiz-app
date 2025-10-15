@@ -7,9 +7,11 @@ import quiz11 from './assets/quiz11.jpg'
 import quiz12 from './assets/quiz12.jpg'
 import quiz13 from './assets/quiz13.jpg'
 import quiz14 from './assets/quiz14.jpg'
+import quiz16a from './assets/quiz16a.png'
+import quiz16b from './assets/quiz16b.png'
 import './App.css'
 
-// 木曜会とusutakuさんに関するクイズデータ（17問: 4択10問 + 画像2択4問 + 文章2択3問）
+// 木曜会とusutakuさんに関するクイズデータ（18問: 4択10問 + 画像2択5問 + 文章2択3問）
 const QUIZ_DATA = [
   {
     id: 1,
@@ -157,6 +159,14 @@ const QUIZ_DATA = [
     type: 'image',
     question: 'どっちがリアルな画像でしょうか？(片方は画像生成AI)',
     image: quiz14,
+    answer: 0 // A
+  },
+  {
+    id: 16,
+    type: 'image_comparison',
+    question: 'どっちがGPT-5でしょうか？(コーディング)',
+    imageA: quiz16a,
+    imageB: quiz16b,
     answer: 0 // A
   },
   {
@@ -310,6 +320,19 @@ function App() {
             {currentQuiz.type === 'image' && (
               <div className="flex justify-center mb-4">
                 <img src={currentQuiz.image} alt={`Question ${currentQuestion + 1}`} className="max-w-full h-auto rounded-lg shadow-lg" />
+              </div>
+            )}
+            
+            {currentQuiz.type === 'image_comparison' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="bg-blue-50 p-2 rounded-lg border-2 border-blue-200">
+                  <h3 className="text-lg font-bold mb-2 text-blue-700 text-center">A</h3>
+                  <img src={currentQuiz.imageA} alt="Option A" className="w-full h-auto rounded-lg shadow-md" />
+                </div>
+                <div className="bg-green-50 p-2 rounded-lg border-2 border-green-200">
+                  <h3 className="text-lg font-bold mb-2 text-green-700 text-center">B</h3>
+                  <img src={currentQuiz.imageB} alt="Option B" className="w-full h-auto rounded-lg shadow-md" />
+                </div>
               </div>
             )}
             
