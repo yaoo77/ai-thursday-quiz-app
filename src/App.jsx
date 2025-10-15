@@ -3,29 +3,158 @@ import { Button } from '@/components/ui/button.jsx'
 import { Input } from '@/components/ui/input.jsx'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Trophy, User, CheckCircle2, XCircle } from 'lucide-react'
+import quiz11 from './assets/quiz11.jpg'
+import quiz12 from './assets/quiz12.jpg'
+import quiz13 from './assets/quiz13.jpg'
 import './App.css'
 
-// ダミーの問題データ（15問）
+// 木曜会とusutakuさんに関するクイズデータ（13問: 4択10問 + 画像2択3問）
 const QUIZ_DATA = [
-  { id: 1, question: "日本の首都は東京である", answer: true },
-  { id: 2, question: "地球は太陽の周りを回っている", answer: true },
-  { id: 3, question: "1週間は8日である", answer: false },
-  { id: 4, question: "富士山は日本で一番高い山である", answer: true },
-  { id: 5, question: "猫は犬より大きい", answer: false },
-  { id: 6, question: "水は100度で沸騰する", answer: true },
-  { id: 7, question: "1年は365日である", answer: true },
-  { id: 8, question: "月は地球より大きい", answer: false },
-  { id: 9, question: "日本は島国である", answer: true },
-  { id: 10, question: "冬は夏より暑い", answer: false },
-  { id: 11, question: "人間には5本の指がある", answer: true },
-  { id: 12, question: "太陽は西から昇る", answer: false },
-  { id: 13, question: "日本語は日本で話されている", answer: true },
-  { id: 14, question: "氷は水より重い", answer: false },
-  { id: 15, question: "1時間は60分である", answer: true }
+  {
+    id: 1,
+    type: 'multiple',
+    question: '"AI木曜会"の由来は？',
+    options: [
+      '夏目漱石と若手文学者が集まり議論を重ねた「木曜会」から',
+      '木曜日がオンライン参加率トップだったから',
+      'usutakuさんが生まれた日が木曜だったから',
+      '初回テスト勉強会がたまたま木曜だったから'
+    ],
+    answer: 0
+  },
+  {
+    id: 2,
+    type: 'multiple',
+    question: 'AI木曜会の3大メインコンテンツは、usutakuさんの有料講座、ニュース振り返ろう会。最後は？',
+    options: [
+      'ハンズオン集中講座',
+      'LT会',
+      'ハッカソン',
+      'オフ会'
+    ],
+    answer: 1
+  },
+  {
+    id: 3,
+    type: 'multiple',
+    question: '木曜会のコンテンツで1番いいね数が多い動画は？',
+    options: [
+      '五味さんの社内AI推進',
+      '飯塚さんのスクラップボックス知的生産',
+      'usutakuさんのNotion講座(初級)',
+      'usutakuさんのChatGPT基礎講座'
+    ],
+    answer: 2
+  },
+  {
+    id: 4,
+    type: 'multiple',
+    question: 'AI木曜会のスローガンは、知をアップデートする、心身を整える。最後は？',
+    options: [
+      'AIで残業ゼロ',
+      '共創で未来をつくる',
+      '仕事はAIに任せよう',
+      '場を創る'
+    ],
+    answer: 3
+  },
+  {
+    id: 5,
+    type: 'multiple',
+    question: 'Fincs内で1番コメント数が多いのはだれ？',
+    options: [
+      '河瀬',
+      'カイトさん',
+      'さちをさん',
+      '亀ちゃん'
+    ],
+    answer: 1
+  },
+  {
+    id: 6,
+    type: 'multiple',
+    question: '生年月日はいつ？',
+    options: [
+      '1995年5月5日',
+      '1997年12月12日',
+      '1999年4月29日',
+      '2001年1月1日'
+    ],
+    answer: 2
+  },
+  {
+    id: 7,
+    type: 'multiple',
+    question: '卒業した大学はどこ？',
+    options: [
+      '京都大学',
+      '東京大学',
+      '国際基督教大学（ICU）',
+      '慶應義塾大学'
+    ],
+    answer: 2
+  },
+  {
+    id: 8,
+    type: 'multiple',
+    question: 'Michikusa創業前にアカウントマネージャーを務めていた企業は？',
+    options: [
+      'Google Japan',
+      'Microsoft Japan',
+      'Amazon Japan',
+      'ソフトバンク'
+    ],
+    answer: 2
+  },
+  {
+    id: 9,
+    type: 'multiple',
+    question: '著書として正しいものはどれ？',
+    options: [
+      '『Notion AIハック 仕事と暮らしを劇的にラクにする72の最強アイデア』',
+      '『生成AI実践マスター』',
+      '『プロンプトエンジニアリング大全』',
+      '『Midjourneyで描く未来』'
+    ],
+    answer: 0
+  },
+  {
+    id: 10,
+    type: 'multiple',
+    question: 'デジタルハリウッド大学での役職は？',
+    options: [
+      '客員教授（Visiting Professor）',
+      '助教（Assistant Professor）',
+      '特任准教授（Specially Appointed Associate Prof.）',
+      '非常勤講師（Lecturer）'
+    ],
+    answer: 2
+  },
+  {
+    id: 11,
+    type: 'image',
+    question: 'どっちがリアルな画像でしょうか？(片方は画像生成AI)',
+    image: quiz11,
+    answer: 1 // B
+  },
+  {
+    id: 12,
+    type: 'image',
+    question: 'どっちがリアルな画像でしょうか？(片方は画像生成AI)',
+    image: quiz12,
+    answer: 1 // B
+  },
+  {
+    id: 13,
+    type: 'image',
+    question: 'どっちがNanobananaでしょうか？(片方がGPT)',
+    image: quiz13,
+    answer: 0 // A
+  }
 ]
 
 function App() {
-  const [screen, setScreen] = useState('register') // register, quiz, result
+  const [screen, setScreen] = useState('register')
   const [username, setUsername] = useState('')
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [score, setScore] = useState(0)
@@ -34,7 +163,6 @@ function App() {
   const [showFeedback, setShowFeedback] = useState(false)
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false)
 
-  // ランキングデータの読み込み
   useEffect(() => {
     const savedRankings = localStorage.getItem('quizRankings')
     if (savedRankings) {
@@ -42,16 +170,14 @@ function App() {
     }
   }, [])
 
-  // ユーザー登録
   const handleRegister = () => {
     if (username.trim()) {
       setScreen('quiz')
     }
   }
 
-  // 回答処理
-  const handleAnswer = (userAnswer) => {
-    const correct = userAnswer === QUIZ_DATA[currentQuestion].answer
+  const handleAnswer = (selectedIndex) => {
+    const correct = selectedIndex === QUIZ_DATA[currentQuestion].answer
     const newAnswers = [...answers, { questionId: QUIZ_DATA[currentQuestion].id, correct }]
     setAnswers(newAnswers)
     
@@ -62,13 +188,11 @@ function App() {
     setLastAnswerCorrect(correct)
     setShowFeedback(true)
 
-    // フィードバック表示後に次の問題へ
     setTimeout(() => {
       setShowFeedback(false)
       if (currentQuestion < QUIZ_DATA.length - 1) {
         setCurrentQuestion(currentQuestion + 1)
       } else {
-        // クイズ終了、結果を保存
         const newScore = correct ? score + 1 : score
         const newRankings = [...rankings, { username, score: newScore, total: QUIZ_DATA.length, date: new Date().toISOString() }]
         newRankings.sort((a, b) => b.score - a.score)
@@ -76,10 +200,9 @@ function App() {
         localStorage.setItem('quizRankings', JSON.stringify(newRankings))
         setScreen('result')
       }
-    }, 1000)
+    }, 1500)
   }
 
-  // リセット
   const handleReset = () => {
     setScreen('register')
     setUsername('')
@@ -90,7 +213,6 @@ function App() {
     setLastAnswerCorrect(false)
   }
 
-  // 登録画面
   if (screen === 'register') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -101,7 +223,7 @@ function App() {
                 <User className="w-12 h-12 text-white" />
               </div>
             </div>
-            <CardTitle className="text-3xl font-bold text-indigo-900">クイズアプリ</CardTitle>
+            <CardTitle className="text-3xl font-bold text-indigo-900">AI木曜会クイズ</CardTitle>
             <CardDescription className="text-lg">ユーザー名を登録してクイズに挑戦しよう！</CardDescription>
           </CardHeader>
           <CardContent>
@@ -130,11 +252,12 @@ function App() {
     )
   }
 
-  // クイズ画面
   if (screen === 'quiz') {
+    const currentQuiz = QUIZ_DATA[currentQuestion]
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl shadow-2xl">
+        <Card className="w-full max-w-4xl shadow-2xl">
           <CardHeader>
             <div className="flex justify-between items-center mb-2">
               <CardDescription className="text-lg">ユーザー: {username}</CardDescription>
@@ -148,9 +271,15 @@ function App() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <CardTitle className="text-2xl md:text-3xl text-center py-8">
-              {QUIZ_DATA[currentQuestion].question}
+            <CardTitle className="text-xl md:text-2xl text-center py-4">
+              {currentQuiz.question}
             </CardTitle>
+            
+            {currentQuiz.type === 'image' && (
+              <div className="flex justify-center mb-4">
+                <img src={currentQuiz.image} alt={`Question ${currentQuestion + 1}`} className="max-w-full h-auto rounded-lg shadow-lg" />
+              </div>
+            )}
             
             {showFeedback ? (
               <div className={`text-center py-8 ${lastAnswerCorrect ? 'text-green-600' : 'text-red-600'}`}>
@@ -167,19 +296,34 @@ function App() {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button 
-                  onClick={() => handleAnswer(true)}
-                  className="text-xl py-8 bg-green-600 hover:bg-green-700 transition-all hover:scale-105"
-                >
-                  ○ 正しい
-                </Button>
-                <Button 
-                  onClick={() => handleAnswer(false)}
-                  className="text-xl py-8 bg-red-600 hover:bg-red-700 transition-all hover:scale-105"
-                >
-                  × 間違い
-                </Button>
+              <div className="grid grid-cols-1 gap-3">
+                {currentQuiz.type === 'multiple' ? (
+                  currentQuiz.options.map((option, index) => (
+                    <Button
+                      key={index}
+                      onClick={() => handleAnswer(index)}
+                      className="text-base md:text-lg py-6 px-4 bg-white text-gray-800 border-2 border-indigo-300 hover:bg-indigo-100 hover:border-indigo-500 transition-all hover:scale-102 whitespace-normal h-auto min-h-[60px]"
+                    >
+                      <span className="font-bold mr-2">{'①②③④'[index]}</span>
+                      <span className="text-left flex-1">{option}</span>
+                    </Button>
+                  ))
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button
+                      onClick={() => handleAnswer(0)}
+                      className="text-2xl py-12 bg-blue-500 text-white hover:bg-blue-600 transition-all hover:scale-105"
+                    >
+                      A
+                    </Button>
+                    <Button
+                      onClick={() => handleAnswer(1)}
+                      className="text-2xl py-12 bg-green-500 text-white hover:bg-green-600 transition-all hover:scale-105"
+                    >
+                      B
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -191,7 +335,6 @@ function App() {
     )
   }
 
-  // 結果画面
   if (screen === 'result') {
     const percentage = Math.round((score / QUIZ_DATA.length) * 100)
     
