@@ -6,9 +6,10 @@ import { Trophy, User, CheckCircle2, XCircle } from 'lucide-react'
 import quiz11 from './assets/quiz11.jpg'
 import quiz12 from './assets/quiz12.jpg'
 import quiz13 from './assets/quiz13.jpg'
+import quiz14 from './assets/quiz14.jpg'
 import './App.css'
 
-// 木曜会とusutakuさんに関するクイズデータ（13問: 4択10問 + 画像2択3問）
+// 木曜会とusutakuさんに関するクイズデータ（14問: 4択10問 + 画像2択4問）
 const QUIZ_DATA = [
   {
     id: 1,
@@ -149,6 +150,13 @@ const QUIZ_DATA = [
     type: 'image',
     question: 'どっちがNanobananaでしょうか？(片方がGPT)',
     image: quiz13,
+    answer: 0 // A
+  },
+  {
+    id: 14,
+    type: 'image',
+    question: 'どっちがリアルな画像でしょうか？(片方は画像生成AI)',
+    image: quiz14,
     answer: 0 // A
   }
 ]
