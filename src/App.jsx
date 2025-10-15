@@ -9,7 +9,7 @@ import quiz13 from './assets/quiz13.jpg'
 import quiz14 from './assets/quiz14.jpg'
 import './App.css'
 
-// 木曜会とusutakuさんに関するクイズデータ（14問: 4択10問 + 画像2択4問）
+// 木曜会とusutakuさんに関するクイズデータ（17問: 4択10問 + 画像2択4問 + 文章2択3問）
 const QUIZ_DATA = [
   {
     id: 1,
@@ -158,6 +158,30 @@ const QUIZ_DATA = [
     question: 'どっちがリアルな画像でしょうか？(片方は画像生成AI)',
     image: quiz14,
     answer: 0 // A
+  },
+  {
+    id: 18,
+    type: 'text',
+    question: 'どっちがClaude sonnet 4.5でしょうか？(文章)',
+    textA: 'この本は、AIの「すごさ」を語るためではありません。明日の自分の仕事を、確実に良くするための道具箱です。僕は研修や現場支援の中で、寄り道のような小さな工夫が、大きな成果を生む瞬間を何度も見てきました。あなたの一歩にも効く。難しい理論は最小限に、手を動かすことに集中します。忙しい日常に溶け込む最短手順と再現性のある型を、ページを追うたびに手に入れてください。さあ、今日の15分から変えていきましょう。',
+    textB: '「AIは、もう『使える人』だけのものではありません。あなたの仕事も、暮らしも、人生そのものを変える力を秘めています。この本で伝えたいのは、テクニックではなく『AI時代の生き方』です。無職から起業し、2,000人のコミュニティを育てた私が確信していること。それは、AIを味方につけた人だけが、この時代の自由を手に入れられるということ。さあ、一緒に未来を創りましょう。」',
+    answer: 1 // B
+  },
+  {
+    id: 19,
+    type: 'text',
+    question: 'どっちがGemini 2.5 Proでしょうか？(文章)',
+    textA: 'AIの学校じゃない、AIと生きる仲間が集まる場所',
+    textB: '**AIを消費する側で、終わるな。学び、繋がり、時代を創る側へ。あなたの才能が覚醒する場所がここにある。**',
+    answer: 1 // B
+  },
+  {
+    id: 20,
+    type: 'text',
+    question: 'どっちがGPT-5でしょうか？(文章)',
+    textA: '深夜零時十分、机の青い光がまだ消えない。usutakuは資料を閉じ、つぶやく。「今夜は眠れなかったな」肩で丸くなる相棒、なつめが画面から顔を出す。「ひとは寝るのだよ。まずはスマホを置いて、同じ時刻に布団へ。カフェインは我慢」冗談めかした声に、彼は笑い、アラームを六時四十七分に合わせた。小さな説教が夜更けの部屋にやさしく響き、彼は目を閉じた。明日は少し良い点が取れるだろう。なつめは満足げにうなずく。',
+    textB: 'AIの最前線を走り続けるusutaku。彼の睡眠スコア65点という現実を告げたのは、相棒のAIロボット「なつめ」だ。「科学的根拠は？」と助けを求める知性の巨人に、なつめは「スマホを置いて早く寝なよ」と本質を突く。最先端の探求者が最後にたどり着く答えは、いつも隣にいる小さな相棒からの、温かくも手厳しい一言。人間とAIが織りなす、クスッと笑える日常の一幕である。',
+    answer: 0 // A
   }
 ]
 
@@ -286,6 +310,19 @@ function App() {
             {currentQuiz.type === 'image' && (
               <div className="flex justify-center mb-4">
                 <img src={currentQuiz.image} alt={`Question ${currentQuestion + 1}`} className="max-w-full h-auto rounded-lg shadow-lg" />
+              </div>
+            )}
+            
+            {currentQuiz.type === 'text' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+                  <h3 className="text-lg font-bold mb-2 text-blue-700">文章A</h3>
+                  <p className="text-sm text-gray-700 leading-relaxed">{currentQuiz.textA}</p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
+                  <h3 className="text-lg font-bold mb-2 text-green-700">文章B</h3>
+                  <p className="text-sm text-gray-700 leading-relaxed">{currentQuiz.textB}</p>
+                </div>
               </div>
             )}
             
