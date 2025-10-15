@@ -7,13 +7,15 @@ import quiz11 from './assets/quiz11.jpg'
 import quiz12 from './assets/quiz12.jpg'
 import quiz13 from './assets/quiz13.jpg'
 import quiz14 from './assets/quiz14.jpg'
+import quiz15a from './assets/quiz15a.png'
+import quiz15b from './assets/quiz15b.png'
 import quiz16a from './assets/quiz16a.png'
 import quiz16b from './assets/quiz16b.png'
 import quiz17a from './assets/quiz17a.png'
 import quiz17b from './assets/quiz17b.png'
 import './App.css'
 
-// 木曜会とusutakuさんに関するクイズデータ（19問: 4択10問 + 画像2択6問 + 文章2択3問）
+// 木曜会とusutakuさんに関するクイズデータ（20問: 4択10問 + 画像2択7問 + 文章2択3問）
 const QUIZ_DATA = [
   {
     id: 1,
@@ -164,9 +166,17 @@ const QUIZ_DATA = [
     answer: 0 // A
   },
   {
+    id: 15,
+    type: 'image_comparison',
+    question: 'どっちがClaude sonnet 4.5でしょうか？(コーディング)',
+    imageA: quiz15a,
+    imageB: quiz15b,
+    answer: 1 // B
+  },
+  {
     id: 16,
     type: 'image_comparison',
-    question: 'どっちがGPT-5でしょうか？(コーディング)',
+    question: 'どっちがGemini 2.5 Proでしょうか？(コーディング)',
     imageA: quiz16a,
     imageB: quiz16b,
     answer: 0 // A
@@ -174,7 +184,7 @@ const QUIZ_DATA = [
   {
     id: 17,
     type: 'image_comparison',
-    question: 'どっちがGemini 2.5 Proでしょうか？(画像生成)',
+    question: 'どっちがGPT-5でしょうか？(コーディング)',
     imageA: quiz17a,
     imageB: quiz17b,
     answer: 1 // B
