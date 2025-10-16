@@ -327,7 +327,7 @@ function App() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <CardTitle className="text-xl md:text-2xl text-center py-4">
+            <CardTitle className="text-xl md:text-2xl text-center py-4 whitespace-pre-line">
               {currentQuiz.question}
             </CardTitle>
             
