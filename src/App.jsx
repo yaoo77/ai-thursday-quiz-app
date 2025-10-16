@@ -416,6 +416,24 @@ function App() {
         return
       }
       
+      // メンバーをデータベースに登録
+      const { data: newMember, error: insertError } = await supabase
+        .from('members')
+        .insert([{
+          name: username,
+          password: password,
+          team_id: selectedTeam.id,
+          score: 0
+        }])
+        .select()
+        .single()
+      
+      if (insertError) {
+        console.error('Error inserting member:', insertError)
+        alert('登録に失敗しました。もう一度お試しください。')
+        return
+      }
+      
       // マスターアカウント（kawase / 123）の場合は直接クイズへ
       const isMasterAccount = username === 'kawase' && password === '123'
       
