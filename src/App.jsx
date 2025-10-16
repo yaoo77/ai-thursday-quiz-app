@@ -7,12 +7,9 @@ import quiz11 from './assets/quiz11.jpg'
 import quiz12 from './assets/quiz12.jpg'
 import quiz13 from './assets/quiz13.jpg'
 import quiz14 from './assets/quiz14.jpg'
-import quiz15a from './assets/quiz15a.png'
-import quiz15b from './assets/quiz15b.png'
-import quiz16a from './assets/quiz16a.png'
-import quiz16b from './assets/quiz16b.png'
-import quiz17a from './assets/quiz17a.png'
-import quiz17b from './assets/quiz17b.png'
+import quiz15 from './assets/quiz15.jpg'
+import quiz16 from './assets/quiz16.jpg'
+import quiz17 from './assets/quiz17.jpg'
 import './App.css'
 
 // 木曜会とusutakuさんに関するクイズデータ（20問: 4択10問 + 画像2択7問 + 文章2択3問）
@@ -140,54 +137,51 @@ const QUIZ_DATA = [
   {
     id: 11,
     type: 'image',
-    question: 'どっちがリアルな画像でしょうか？(片方は画像生成AI)',
+    question: 'AIで生成されてない画像はどっちでしょうか？(片方は画像生成AI)',
     image: quiz11,
     answer: 1 // B
   },
   {
     id: 12,
     type: 'image',
-    question: 'どっちがリアルな画像でしょうか？(片方は画像生成AI)',
+    question: 'AIで生成されてない画像はどっちでしょうか？(片方は画像生成AI)',
     image: quiz12,
     answer: 1 // B
   },
   {
     id: 13,
     type: 'image',
-    question: 'どっちがNanobananaでしょうか？(片方がGPT)',
+    question: 'どっちがNanobananaで生成した画像でしょうか？',
     image: quiz13,
-    answer: 0 // A
+    answer: 1 // B
   },
   {
     id: 14,
     type: 'image',
-    question: 'どっちがリアルな画像でしょうか？(片方は画像生成AI)',
+    question: 'どっちがNanobananaで生成した画像でしょうか？',
     image: quiz14,
-    answer: 0 // A
+    answer: 1 // B
   },
   {
     id: 15,
-    type: 'image_comparison',
+    type: 'image',
     question: 'どっちがClaude sonnet 4.5でしょうか？(コーディング)',
-    imageA: quiz15a,
-    imageB: quiz15b,
+    image: quiz15,
     answer: 1 // B
   },
   {
     id: 16,
-    type: 'image_comparison',
+    type: 'image',
     question: 'どっちがGemini 2.5 Proでしょうか？(コーディング)',
-    imageA: quiz16a,
-    imageB: quiz16b,
-    answer: 0 // A
+    image: quiz16,
+    answer: 1 // B
   },
   {
     id: 17,
-    type: 'image_comparison',
+    type: 'image',
     question: 'どっちがGPT-5でしょうか？(コーディング)',
-    imageA: quiz17a,
-    imageB: quiz17b,
-    answer: 1 // B
+    image: quiz17,
+    answer: 0 // A
   },
   {
     id: 18,
@@ -202,7 +196,7 @@ const QUIZ_DATA = [
     type: 'text',
     question: 'どっちがGemini 2.5 Proでしょうか？(文章)',
     textA: 'AIの学校じゃない、AIと生きる仲間が集まる場所',
-    textB: '**AIを消費する側で、終わるな。学び、繋がり、時代を創る側へ。あなたの才能が覚醒する場所がここにある。**',
+    textB: 'AIを消費する側で、終わるな。学び、繋がり、時代を創る側へ。あなたの才能が覚醒する場所がここにある。',
     answer: 1 // B
   },
   {
