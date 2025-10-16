@@ -279,10 +279,28 @@ function App() {
     setScreen('register')
   }
 
-  const handleRegister = () => {
-    if (username.trim() && selectedTeam) {
-      setScreen('quiz')
+  const handleRegister = async () => {
+    if (!username.trim() || !selectedTeam) return
+    
+    // チームのメンバー数をチェック
+    const { data: members, error } = await supabase
+      .from('members')
+      .select('id')
+      .eq('team_id', selectedTeam.id)
+    
+    if (error) {
+      console.error('Error checking team members:', error)
+      alert('エラーが発生しました。もう一度お試しください。')
+      return
     }
+    
+    if (members && members.length >= 10) {
+      alert('このチームは既に10人のメンバーが登録されています。別のチームを選択してください。')
+      setScreen('team_select')
+      return
+    }
+    
+    setScreen('quiz')
   }
 
   const handleAnswer = async (answerIndex) => {
