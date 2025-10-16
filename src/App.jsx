@@ -89,7 +89,7 @@ const QUIZ_DATA = [
   {
     id: 7,
     type: 'multiple',
-    question: '卒業した大学はどこ？',
+    question: '【usutakuさんに関するクイズ】\n卒業した大学はどこ？',
     options: [
       '京都大学',
       '東京大学',
@@ -101,7 +101,7 @@ const QUIZ_DATA = [
   {
     id: 8,
     type: 'multiple',
-    question: 'Michikusa創業前にアカウントマネージャーを務めていた企業は？',
+    question: '【usutakuさんに関するクイズ】\nMichikusa創業前にアカウントマネージャーを務めていた企業は？',
     options: [
       'Google Japan',
       'Microsoft Japan',
@@ -113,7 +113,7 @@ const QUIZ_DATA = [
   {
     id: 9,
     type: 'multiple',
-    question: '著書として正しいものはどれ？',
+    question: '【usutakuさんに関するクイズ】\n著書として正しいものはどれ？',
     options: [
       '『Notion AIハック 仕事と暮らしを劇的にラクにする72の最強アイデア』',
       '『生成AI実践マスター』',
@@ -125,7 +125,7 @@ const QUIZ_DATA = [
   {
     id: 10,
     type: 'multiple',
-    question: 'デジタルハリウッド大学での役職は？',
+    question: '【usutakuさんに関するクイズ】\nデジタルハリウッド大学での役職は？',
     options: [
       '客員教授（Visiting Professor）',
       '助教（Assistant Professor）',
