@@ -387,13 +387,12 @@ function App() {
     } else {
       // 新規登録処理
       // ユーザー名の重複チェック
-      const { data: existingUser, error: checkError } = await supabase
+      const { data: existingUsers, error: checkError } = await supabase
         .from('members')
         .select('id')
         .eq('name', username)
-        .single()
       
-      if (existingUser) {
+      if (existingUsers && existingUsers.length > 0) {
         alert('このユーザー名は既に使用されています。ログインするか、別の名前を選んでください。')
         return
       }
