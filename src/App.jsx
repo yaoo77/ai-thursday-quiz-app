@@ -362,11 +362,16 @@ function App() {
         return
       }
       
-      // 最低人数（5人）をチェック
-      const currentMemberCount = members ? members.length : 0
-      if (currentMemberCount < 4) {
-        alert(`このチームは現在${currentMemberCount + 1}人です。クイズを開始するには最低5人必要です。あと${4 - currentMemberCount}人待ってください。`)
-        return
+      // マスターアカウント（kawase / 123）の場合は人数制限をスキップ
+      const isMasterAccount = username === 'kawase' && password === '123'
+      
+      // 最低人数（5人）をチェック（マスターアカウント以外）
+      if (!isMasterAccount) {
+        const currentMemberCount = members ? members.length : 0
+        if (currentMemberCount < 4) {
+          alert(`このチームは現在${currentMemberCount + 1}人です。クイズを開始するには最低5人必要です。あと${4 - currentMemberCount}人待ってください。`)
+          return
+        }
       }
       
       setScreen('quiz')
