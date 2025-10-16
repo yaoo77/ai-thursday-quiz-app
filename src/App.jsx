@@ -77,7 +77,7 @@ const QUIZ_DATA = [
   {
     id: 6,
     type: 'multiple',
-    question: '生年月日はいつ？',
+    question: '【usutakuさんに関するクイズ】\n生年月日はいつ？',
     options: [
       '1995年5月5日',
       '1997年12月12日',
