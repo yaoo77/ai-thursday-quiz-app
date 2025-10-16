@@ -358,16 +358,17 @@ function App() {
     
     if (isLogin) {
       // ログイン処理
-      const { data: existingMember, error } = await supabase
+      const { data: existingMembers, error } = await supabase
         .from('members')
         .select('*, teams(*)')
         .eq('name', username)
-        .single()
       
-      if (error || !existingMember) {
+      if (error || !existingMembers || existingMembers.length === 0) {
         alert('ユーザー名が見つかりません。新規登録してください。')
         return
       }
+      
+      const existingMember = existingMembers[0]
       
       if (existingMember.password !== password) {
         alert('パスワードが間違っています。')
