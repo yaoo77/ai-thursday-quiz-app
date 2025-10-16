@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Input } from '@/components/ui/input.jsx'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { Trophy, User, CheckCircle2, XCircle } from 'lucide-react'
+import { Trophy, User, CheckCircle2, XCircle, Users } from 'lucide-react'
+import { supabase } from './supabaseClient'
 import quiz11 from './assets/quiz11.jpg'
 import quiz12 from './assets/quiz12.jpg'
 import quiz13 from './assets/quiz13.jpg'
@@ -209,33 +210,88 @@ const QUIZ_DATA = [
   }
 ]
 
+
 function App() {
-  const [screen, setScreen] = useState('register')
+  const [screen, setScreen] = useState('team_select') // team_select, register, quiz, result, ranking
+  const [teams, setTeams] = useState([])
+  const [selectedTeam, setSelectedTeam] = useState(null)
+  const [newTeamName, setNewTeamName] = useState('')
   const [username, setUsername] = useState('')
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [score, setScore] = useState(0)
   const [answers, setAnswers] = useState([])
-  const [rankings, setRankings] = useState([])
   const [showFeedback, setShowFeedback] = useState(false)
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false)
+  const [teamRankings, setTeamRankings] = useState([])
 
+  // チーム一覧を取得
   useEffect(() => {
-    const savedRankings = localStorage.getItem('quizRankings')
-    if (savedRankings) {
-      setRankings(JSON.parse(savedRankings))
-    }
+    fetchTeams()
   }, [])
 
+  const fetchTeams = async () => {
+    const { data, error } = await supabase
+      .from('teams')
+      .select('*')
+      .order('total_score', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching teams:', error)
+    } else {
+      setTeams(data || [])
+    }
+  }
+
+  const fetchTeamRankings = async () => {
+    const { data, error } = await supabase
+      .from('teams')
+      .select('*')
+      .order('total_score', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching team rankings:', error)
+    } else {
+      setTeamRankings(data || [])
+    }
+  }
+
+  const handleCreateTeam = async () => {
+    if (!newTeamName.trim()) return
+    
+    const { data, error } = await supabase
+      .from('teams')
+      .insert([{ name: newTeamName, total_score: 0 }])
+      .select()
+    
+    if (error) {
+      console.error('Error creating team:', error)
+      alert('チーム名が既に存在します。別の名前を入力してください。')
+    } else {
+      setSelectedTeam(data[0])
+      setNewTeamName('')
+      fetchTeams()
+      setScreen('register')
+    }
+  }
+
+  const handleSelectTeam = (team) => {
+    setSelectedTeam(team)
+    setScreen('register')
+  }
+
   const handleRegister = () => {
-    if (username.trim()) {
+    if (username.trim() && selectedTeam) {
       setScreen('quiz')
     }
   }
 
-  const handleAnswer = (selectedIndex) => {
-    const correct = selectedIndex === QUIZ_DATA[currentQuestion].answer
-    const newAnswers = [...answers, { questionId: QUIZ_DATA[currentQuestion].id, correct }]
-    setAnswers(newAnswers)
+  const handleAnswer = async (answerIndex) => {
+    if (showFeedback) return
+    
+    const currentQuiz = QUIZ_DATA[currentQuestion]
+    const correct = answerIndex === currentQuiz.answer
+    
+    setAnswers([...answers, { question: currentQuestion, answer: answerIndex, correct }])
     
     if (correct) {
       setScore(score + 1)
@@ -244,31 +300,121 @@ function App() {
     setLastAnswerCorrect(correct)
     setShowFeedback(true)
 
-    setTimeout(() => {
+    setTimeout(async () => {
       setShowFeedback(false)
       if (currentQuestion < QUIZ_DATA.length - 1) {
         setCurrentQuestion(currentQuestion + 1)
       } else {
-        const newScore = correct ? score + 1 : score
-        const newRankings = [...rankings, { username, score: newScore, total: QUIZ_DATA.length, date: new Date().toISOString() }]
-        newRankings.sort((a, b) => b.score - a.score)
-        setRankings(newRankings)
-        localStorage.setItem('quizRankings', JSON.stringify(newRankings))
+        const finalScore = correct ? score + 1 : score
+        
+        // メンバーをデータベースに追加
+        const { data: memberData, error: memberError } = await supabase
+          .from('members')
+          .insert([{
+            name: username,
+            team_id: selectedTeam.id,
+            score: finalScore
+          }])
+          .select()
+        
+        if (memberError) {
+          console.error('Error adding member:', memberError)
+        }
+        
+        // チームの合計得点を更新
+        const { data: teamData, error: teamError } = await supabase
+          .from('teams')
+          .update({ total_score: selectedTeam.total_score + finalScore })
+          .eq('id', selectedTeam.id)
+          .select()
+        
+        if (teamError) {
+          console.error('Error updating team score:', teamError)
+        }
+        
+        await fetchTeamRankings()
         setScreen('result')
       }
     }, 1500)
   }
 
   const handleReset = () => {
-    setScreen('register')
+    setScreen('team_select')
+    setSelectedTeam(null)
     setUsername('')
     setCurrentQuestion(0)
     setScore(0)
     setAnswers([])
     setShowFeedback(false)
     setLastAnswerCorrect(false)
+    fetchTeams()
   }
 
+  const currentQuiz = QUIZ_DATA[currentQuestion]
+
+  // チーム選択画面
+  if (screen === 'team_select') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl shadow-2xl">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="bg-indigo-600 p-4 rounded-full">
+                <Users className="w-12 h-12 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-3xl font-bold text-indigo-900">チームを選択</CardTitle>
+            <CardDescription className="text-lg">既存のチームを選ぶか、新しいチームを作成してください</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold">新しいチームを作成</h3>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="チーム名を入力"
+                  value={newTeamName}
+                  onChange={(e) => setNewTeamName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreateTeam()}
+                  className="text-lg p-6"
+                />
+                <Button 
+                  onClick={handleCreateTeam}
+                  disabled={!newTeamName.trim()}
+                  className="text-lg py-6 px-8 bg-indigo-600 hover:bg-indigo-700"
+                >
+                  作成
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold">既存のチームを選択</h3>
+              <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
+                {teams.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">まだチームがありません</p>
+                ) : (
+                  teams.map((team) => (
+                    <Button
+                      key={team.id}
+                      onClick={() => handleSelectTeam(team)}
+                      variant="outline"
+                      className="w-full text-left justify-between p-6 hover:bg-indigo-50"
+                    >
+                      <span className="text-lg font-semibold">{team.name}</span>
+                      <span className="text-indigo-600 font-bold">{team.total_score}点</span>
+                    </Button>
+                  ))
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // メンバー登録画面
   if (screen === 'register') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -279,14 +425,16 @@ function App() {
                 <User className="w-12 h-12 text-white" />
               </div>
             </div>
-            <CardTitle className="text-3xl font-bold text-indigo-900">AI木曜会クイズ</CardTitle>
-            <CardDescription className="text-lg">ユーザー名を登録してクイズに挑戦しよう！</CardDescription>
+            <CardTitle className="text-3xl font-bold text-indigo-900">メンバー登録</CardTitle>
+            <CardDescription className="text-lg">
+              チーム: <span className="font-bold text-indigo-600">{selectedTeam?.name}</span>
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <Input
                 type="text"
-                placeholder="ユーザー名を入力"
+                placeholder="あなたの名前を入力"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleRegister()}
@@ -294,11 +442,18 @@ function App() {
               />
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex gap-2">
+            <Button 
+              onClick={() => setScreen('team_select')}
+              variant="outline"
+              className="flex-1 text-lg py-6"
+            >
+              戻る
+            </Button>
             <Button 
               onClick={handleRegister} 
               disabled={!username.trim()}
-              className="w-full text-lg py-6 bg-indigo-600 hover:bg-indigo-700"
+              className="flex-1 text-lg py-6 bg-indigo-600 hover:bg-indigo-700"
             >
               スタート
             </Button>
@@ -308,16 +463,19 @@ function App() {
     )
   }
 
+  // クイズ画面（既存のコードを使用）
   if (screen === 'quiz') {
-    const currentQuiz = QUIZ_DATA[currentQuestion]
-    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-4xl shadow-2xl">
           <CardHeader>
             <div className="flex justify-between items-center mb-2">
-              <CardDescription className="text-lg">ユーザー: {username}</CardDescription>
-              <CardDescription className="text-lg">問題 {currentQuestion + 1} / {QUIZ_DATA.length}</CardDescription>
+              <span className="text-sm text-gray-600">
+                問題 {currentQuestion + 1} / {QUIZ_DATA.length}
+              </span>
+              <span className="text-sm font-semibold text-indigo-600">
+                {username} ({selectedTeam?.name})
+              </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div 
@@ -338,145 +496,210 @@ function App() {
             )}
             
             {currentQuiz.type === 'image_comparison' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div className="bg-blue-50 p-2 rounded-lg border-2 border-blue-200">
-                  <h3 className="text-lg font-bold mb-2 text-blue-700 text-center">A</h3>
-                  <img src={currentQuiz.imageA} alt="Option A" className="w-full h-auto rounded-lg shadow-md" />
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="text-center">
+                  <p className="font-bold mb-2">A</p>
+                  <img src={currentQuiz.imageA} alt="Option A" className="w-full h-auto rounded-lg shadow-lg" />
                 </div>
-                <div className="bg-green-50 p-2 rounded-lg border-2 border-green-200">
-                  <h3 className="text-lg font-bold mb-2 text-green-700 text-center">B</h3>
-                  <img src={currentQuiz.imageB} alt="Option B" className="w-full h-auto rounded-lg shadow-md" />
-                </div>
-              </div>
-            )}
-            
-            {currentQuiz.type === 'text' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
-                  <h3 className="text-lg font-bold mb-2 text-blue-700">文章A</h3>
-                  <p className="text-sm text-gray-700 leading-relaxed">{currentQuiz.textA}</p>
-                </div>
-                <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
-                  <h3 className="text-lg font-bold mb-2 text-green-700">文章B</h3>
-                  <p className="text-sm text-gray-700 leading-relaxed">{currentQuiz.textB}</p>
+                <div className="text-center">
+                  <p className="font-bold mb-2">B</p>
+                  <img src={currentQuiz.imageB} alt="Option B" className="w-full h-auto rounded-lg shadow-lg" />
                 </div>
               </div>
             )}
-            
-            {showFeedback ? (
-              <div className={`text-center py-8 ${lastAnswerCorrect ? 'text-green-600' : 'text-red-600'}`}>
+
+            <div className="grid grid-cols-1 gap-3">
+              {currentQuiz.type === 'multiple' && currentQuiz.options.map((option, index) => (
+                <Button
+                  key={index}
+                  onClick={() => handleAnswer(index)}
+                  disabled={showFeedback}
+                  className={`p-6 text-left justify-start h-auto whitespace-normal ${
+                    showFeedback
+                      ? index === currentQuiz.answer
+                        ? 'bg-green-500 hover:bg-green-600'
+                        : answers[answers.length - 1]?.answer === index
+                        ? 'bg-red-500 hover:bg-red-600'
+                        : 'bg-gray-300'
+                      : 'bg-white hover:bg-indigo-50 text-gray-900'
+                  }`}
+                  variant={showFeedback ? 'default' : 'outline'}
+                >
+                  <span className="font-bold mr-3">{['①', '②', '③', '④'][index]}</span>
+                  <span className="text-base">{option}</span>
+                </Button>
+              ))}
+              
+              {(currentQuiz.type === 'image' || currentQuiz.type === 'image_comparison') && (
+                <>
+                  <Button
+                    onClick={() => handleAnswer(0)}
+                    disabled={showFeedback}
+                    className={`p-6 text-lg ${
+                      showFeedback
+                        ? currentQuiz.answer === 0
+                          ? 'bg-green-500 hover:bg-green-600'
+                          : answers[answers.length - 1]?.answer === 0
+                          ? 'bg-red-500 hover:bg-red-600'
+                          : 'bg-gray-300'
+                        : 'bg-white hover:bg-indigo-50 text-gray-900'
+                    }`}
+                    variant={showFeedback ? 'default' : 'outline'}
+                  >
+                    A
+                  </Button>
+                  <Button
+                    onClick={() => handleAnswer(1)}
+                    disabled={showFeedback}
+                    className={`p-6 text-lg ${
+                      showFeedback
+                        ? currentQuiz.answer === 1
+                          ? 'bg-green-500 hover:bg-green-600'
+                          : answers[answers.length - 1]?.answer === 1
+                          ? 'bg-red-500 hover:bg-red-600'
+                          : 'bg-gray-300'
+                        : 'bg-white hover:bg-indigo-50 text-gray-900'
+                    }`}
+                    variant={showFeedback ? 'default' : 'outline'}
+                  >
+                    B
+                  </Button>
+                </>
+              )}
+              
+              {currentQuiz.type === 'text_comparison' && (
+                <>
+                  <Button
+                    onClick={() => handleAnswer(0)}
+                    disabled={showFeedback}
+                    className={`p-6 text-left justify-start h-auto whitespace-normal ${
+                      showFeedback
+                        ? currentQuiz.answer === 0
+                          ? 'bg-green-500 hover:bg-green-600'
+                          : answers[answers.length - 1]?.answer === 0
+                          ? 'bg-red-500 hover:bg-red-600'
+                          : 'bg-gray-300'
+                        : 'bg-white hover:bg-indigo-50 text-gray-900'
+                    }`}
+                    variant={showFeedback ? 'default' : 'outline'}
+                  >
+                    <div>
+                      <p className="font-bold mb-2">文章A</p>
+                      <p className="text-sm">{currentQuiz.textA}</p>
+                    </div>
+                  </Button>
+                  <Button
+                    onClick={() => handleAnswer(1)}
+                    disabled={showFeedback}
+                    className={`p-6 text-left justify-start h-auto whitespace-normal ${
+                      showFeedback
+                        ? currentQuiz.answer === 1
+                          ? 'bg-green-500 hover:bg-green-600'
+                          : answers[answers.length - 1]?.answer === 1
+                          ? 'bg-red-500 hover:bg-red-600'
+                          : 'bg-gray-300'
+                        : 'bg-white hover:bg-indigo-50 text-gray-900'
+                    }`}
+                    variant={showFeedback ? 'default' : 'outline'}
+                  >
+                    <div>
+                      <p className="font-bold mb-2">文章B</p>
+                      <p className="text-sm">{currentQuiz.textB}</p>
+                    </div>
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {showFeedback && (
+              <div className={`flex items-center justify-center gap-2 p-4 rounded-lg ${
+                lastAnswerCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              }`}>
                 {lastAnswerCorrect ? (
-                  <div className="flex flex-col items-center gap-2">
-                    <CheckCircle2 className="w-16 h-16 animate-bounce" />
-                    <p className="text-2xl font-bold">正解！</p>
-                  </div>
+                  <>
+                    <CheckCircle2 className="w-6 h-6" />
+                    <span className="font-bold text-lg">正解！</span>
+                  </>
                 ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <XCircle className="w-16 h-16 animate-shake" />
-                    <p className="text-2xl font-bold">不正解</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-3">
-                {currentQuiz.type === 'multiple' ? (
-                  currentQuiz.options.map((option, index) => (
-                    <Button
-                      key={index}
-                      onClick={() => handleAnswer(index)}
-                      className="text-base md:text-lg py-6 px-4 bg-white text-gray-800 border-2 border-indigo-300 hover:bg-indigo-100 hover:border-indigo-500 transition-all hover:scale-102 whitespace-normal h-auto min-h-[60px]"
-                    >
-                      <span className="font-bold mr-2">{'①②③④'[index]}</span>
-                      <span className="text-left flex-1">{option}</span>
-                    </Button>
-                  ))
-                ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button
-                      onClick={() => handleAnswer(0)}
-                      className="text-2xl py-12 bg-blue-500 text-white hover:bg-blue-600 transition-all hover:scale-105"
-                    >
-                      A
-                    </Button>
-                    <Button
-                      onClick={() => handleAnswer(1)}
-                      className="text-2xl py-12 bg-green-500 text-white hover:bg-green-600 transition-all hover:scale-105"
-                    >
-                      B
-                    </Button>
-                  </div>
+                  <>
+                    <XCircle className="w-6 h-6" />
+                    <span className="font-bold text-lg">不正解</span>
+                  </>
                 )}
               </div>
             )}
           </CardContent>
-          <CardFooter className="justify-center">
-            <p className="text-lg text-gray-600">現在のスコア: {score} / {currentQuestion}</p>
+        </Card>
+      </div>
+    )
+  }
+
+  // 結果画面
+  if (screen === 'result') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl shadow-2xl">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="bg-yellow-500 p-4 rounded-full">
+                <Trophy className="w-16 h-16 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-4xl font-bold text-indigo-900 mb-2">クイズ完了！</CardTitle>
+            <CardDescription className="text-xl">
+              {username}さん ({selectedTeam?.name})
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="text-center p-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg text-white">
+              <p className="text-2xl mb-2">あなたのスコア</p>
+              <p className="text-6xl font-bold">{score} / {QUIZ_DATA.length}</p>
+              <p className="text-xl mt-4">正答率: {Math.round((score / QUIZ_DATA.length) * 100)}%</p>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-2xl font-bold text-center">チームランキング</h3>
+              <div className="space-y-2">
+                {teamRankings.map((team, index) => (
+                  <div
+                    key={team.id}
+                    className={`flex items-center justify-between p-4 rounded-lg ${
+                      team.id === selectedTeam?.id
+                        ? 'bg-indigo-100 border-2 border-indigo-500'
+                        : 'bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`text-2xl font-bold ${
+                        index === 0 ? 'text-yellow-500' :
+                        index === 1 ? 'text-gray-400' :
+                        index === 2 ? 'text-orange-600' :
+                        'text-gray-600'
+                      }`}>
+                        {index + 1}
+                      </span>
+                      <span className="text-lg font-semibold">{team.name}</span>
+                    </div>
+                    <span className="text-xl font-bold text-indigo-600">{team.total_score}点</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              onClick={handleReset}
+              className="w-full text-lg py-6 bg-indigo-600 hover:bg-indigo-700"
+            >
+              最初に戻る
+            </Button>
           </CardFooter>
         </Card>
       </div>
     )
   }
 
-  if (screen === 'result') {
-    const percentage = Math.round((score / QUIZ_DATA.length) * 100)
-    
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-4xl space-y-6">
-          <Card className="shadow-2xl">
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
-                <div className="bg-yellow-500 p-4 rounded-full">
-                  <Trophy className="w-16 h-16 text-white" />
-                </div>
-              </div>
-              <CardTitle className="text-4xl font-bold text-yellow-900">クイズ終了！</CardTitle>
-              <CardDescription className="text-xl mt-2">{username}さんの結果</CardDescription>
-            </CardHeader>
-            <CardContent className="text-center space-y-6">
-              <div className="bg-gradient-to-r from-yellow-100 to-orange-100 p-8 rounded-lg">
-                <p className="text-6xl font-bold text-yellow-900 mb-2">{score} / {QUIZ_DATA.length}</p>
-                <p className="text-2xl text-yellow-700">正解率: {percentage}%</p>
-              </div>
-              
-              <div className="pt-4">
-                <h3 className="text-2xl font-bold mb-4 text-gray-800">ランキング</h3>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {rankings.map((rank, index) => (
-                    <div 
-                      key={index}
-                      className={`flex justify-between items-center p-4 rounded-lg ${
-                        rank.username === username && rank.score === score 
-                          ? 'bg-yellow-200 border-2 border-yellow-500' 
-                          : 'bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl font-bold text-gray-600">#{index + 1}</span>
-                        <span className="text-lg font-semibold">{rank.username}</span>
-                      </div>
-                      <span className="text-xl font-bold text-indigo-600">
-                        {rank.score} / {rank.total}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="justify-center">
-              <Button 
-                onClick={handleReset}
-                className="text-lg py-6 px-8 bg-indigo-600 hover:bg-indigo-700"
-              >
-                もう一度挑戦する
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-      </div>
-    )
-  }
+  return null
 }
 
 export default App
-
