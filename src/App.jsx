@@ -217,6 +217,8 @@ function App() {
   const [selectedTeam, setSelectedTeam] = useState(null)
   const [newTeamName, setNewTeamName] = useState('')
   const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [isLogin, setIsLogin] = useState(false)
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [score, setScore] = useState(0)
   const [answers, setAnswers] = useState([])
@@ -296,35 +298,79 @@ function App() {
   }
 
   const handleRegister = async () => {
-    if (!username.trim() || !selectedTeam) return
-    
-    // チームのメンバー数をチェック
-    const { data: members, error } = await supabase
-      .from('members')
-      .select('id')
-      .eq('team_id', selectedTeam.id)
-    
-    if (error) {
-      console.error('Error checking team members:', error)
-      alert('エラーが発生しました。もう一度お試しください。')
+    if (!username.trim() || !password.trim() || !selectedTeam) {
+      alert('ユーザー名とパスワード（3桁）を入力してください。')
       return
     }
     
-    if (members && members.length >= 10) {
-      alert('このチームは既に10人のメンバーが登録されています。別のチームを選択してください。')
-      setScreen('team_select')
+    if (password.length !== 3 || !/^\d{3}$/.test(password)) {
+      alert('パスワードは3桁の数字で入力してください。')
       return
     }
     
-    // 最低人数（5人）をチェック
-    const currentMemberCount = members ? members.length : 0
-    if (currentMemberCount < 4) {
-      // 現在のメンバー数が4人以下の場合、5人目になるまで待つ
-      alert(`このチームは現在${currentMemberCount + 1}人です。クイズを開始するには最低5人必要です。あと${4 - currentMemberCount}人待ってください。`)
-      return
+    if (isLogin) {
+      // ログイン処理
+      const { data: existingMember, error } = await supabase
+        .from('members')
+        .select('*, teams(*)')
+        .eq('name', username)
+        .single()
+      
+      if (error || !existingMember) {
+        alert('ユーザー名が見つかりません。新規登録してください。')
+        return
+      }
+      
+      if (existingMember.password !== password) {
+        alert('パスワードが間違っています。')
+        return
+      }
+      
+      // ログイン成功
+      setSelectedTeam(existingMember.teams)
+      alert(`ようこそ、${username}さん！前回のスコア: ${existingMember.score}点`)
+      setScreen('quiz')
+    } else {
+      // 新規登録処理
+      // ユーザー名の重複チェック
+      const { data: existingUser, error: checkError } = await supabase
+        .from('members')
+        .select('id')
+        .eq('name', username)
+        .single()
+      
+      if (existingUser) {
+        alert('このユーザー名は既に使用されています。ログインするか、別の名前を選んでください。')
+        return
+      }
+      
+      // チームのメンバー数をチェック
+      const { data: members, error } = await supabase
+        .from('members')
+        .select('id')
+        .eq('team_id', selectedTeam.id)
+      
+      if (error) {
+        console.error('Error checking team members:', error)
+        alert('エラーが発生しました。もう一度お試しください。')
+        return
+      }
+      
+      if (members && members.length >= 10) {
+        alert('このチームは既に10人のメンバーが登録されています。別のチームを選択してください。')
+        setScreen('team_select')
+        return
+      }
+      
+      // 最低人数（5人）をチェック
+      const currentMemberCount = members ? members.length : 0
+      if (currentMemberCount < 4) {
+        alert(`このチームは現在${currentMemberCount + 1}人です。クイズを開始するには最低5人必要です。あと${4 - currentMemberCount}人待ってください。`)
+        return
+      }
+      
+      setScreen('quiz')
     }
-    
-    setScreen('quiz')
   }
 
   const handleAnswer = async (answerIndex) => {
@@ -349,20 +395,33 @@ function App() {
       } else {
         const finalScore = correct ? score + 1 : score
         
-        // メンバーをデータベースに追加
-        const { data: memberData, error: memberError } = await supabase
-          .from('members')
-          .insert([{
-            name: username,
-            team_id: selectedTeam.id,
-            score: finalScore
-          }])
-          .select()
-        
-        if (memberError) {
-          console.error('Error adding member:', memberError)
+        // メンバーをデータベースに追加（新規登録の場合のみ）
+        if (!isLogin) {
+          const { data: memberData, error: memberError } = await supabase
+            .from('members')
+            .insert([{
+              name: username,
+              team_id: selectedTeam.id,
+              score: finalScore,
+              password: password
+            }])
+            .select()
+          
+          if (memberError) {
+            console.error('Error adding member:', memberError)
+          }
+        } else {
+          // ログインユーザーのスコアを更新
+          const { error: updateError } = await supabase
+            .from('members')
+            .update({ score: finalScore })
+            .eq('name', username)
+          
+          if (updateError) {
+            console.error('Error updating member score:', updateError)
+          }
         }
-        
+
         // チームの合計得点を更新
         const { data: teamData, error: teamError } = await supabase
           .from('teams')
@@ -384,6 +443,8 @@ function App() {
     setScreen('team_select')
     setSelectedTeam(null)
     setUsername('')
+    setPassword('')
+    setIsLogin(false)
     setCurrentQuestion(0)
     setScore(0)
     setAnswers([])
@@ -474,19 +535,52 @@ function App() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              <div className="flex gap-2 mb-4">
+                <Button
+                  onClick={() => setIsLogin(false)}
+                  variant={!isLogin ? "default" : "outline"}
+                  className="flex-1"
+                >
+                  新規登録
+                </Button>
+                <Button
+                  onClick={() => setIsLogin(true)}
+                  variant={isLogin ? "default" : "outline"}
+                  className="flex-1"
+                >
+                  ログイン
+                </Button>
+              </div>
               <Input
                 type="text"
-                placeholder="あなたの名前を入力"
+                placeholder="ユーザー名を入力"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleRegister()}
                 className="text-lg p-6"
               />
+              <Input
+                type="password"
+                placeholder="パスワード（3桁の数字）"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleRegister()}
+                maxLength={3}
+                className="text-lg p-6"
+              />
+              {!isLogin && (
+                <p className="text-sm text-gray-600">
+                  ※ パスワードは3桁の数字で設定してください（例: 123）
+                </p>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex gap-2">
             <Button 
-              onClick={() => setScreen('team_select')}
+              onClick={() => {
+                setScreen('team_select')
+                setPassword('')
+                setIsLogin(false)
+              }}
               variant="outline"
               className="flex-1 text-lg py-6"
             >
@@ -494,10 +588,10 @@ function App() {
             </Button>
             <Button 
               onClick={handleRegister} 
-              disabled={!username.trim()}
+              disabled={!username.trim() || !password.trim()}
               className="flex-1 text-lg py-6 bg-indigo-600 hover:bg-indigo-700"
             >
-              スタート
+              {isLogin ? 'ログイン' : 'スタート'}
             </Button>
           </CardFooter>
         </Card>
