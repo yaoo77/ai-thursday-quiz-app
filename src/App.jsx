@@ -212,7 +212,7 @@ const QUIZ_DATA = [
 
 
 function App() {
-  const [screen, setScreen] = useState('team_select') // team_select, register, quiz, result, ranking
+  const [screen, setScreen] = useState('team_select') // team_select, register, waiting, quiz, result, ranking
   const [teams, setTeams] = useState([])
   const [selectedTeam, setSelectedTeam] = useState(null)
   const [newTeamName, setNewTeamName] = useState('')
@@ -225,11 +225,43 @@ function App() {
   const [showFeedback, setShowFeedback] = useState(false)
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false)
   const [teamRankings, setTeamRankings] = useState([])
+  const [teamMembers, setTeamMembers] = useState([])
 
   // チーム一覧を取得
   useEffect(() => {
     fetchTeams()
   }, [])
+
+  // 待機画面でチームメンバーをリアルタイム取得
+  useEffect(() => {
+    if (screen === 'waiting' && selectedTeam) {
+      fetchTeamMembers()
+      
+      // Supabaseのリアルタイム更新を設定
+      const channel = supabase
+        .channel(`team-${selectedTeam.id}-members`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'members',
+            filter: `team_id=eq.${selectedTeam.id}`
+          },
+          (payload) => {
+            console.log('リアルタイム更新:', payload)
+            fetchTeamMembers()
+          }
+        )
+        .subscribe((status) => {
+          console.log('サブスクリプション状態:', status)
+        })
+      
+      return () => {
+        supabase.removeChannel(channel)
+      }
+    }
+  }, [screen, selectedTeam])
 
   const fetchTeams = async () => {
     const { data, error } = await supabase
@@ -254,6 +286,22 @@ function App() {
       console.error('Error fetching team rankings:', error)
     } else {
       setTeamRankings(data || [])
+    }
+  }
+
+  const fetchTeamMembers = async () => {
+    if (!selectedTeam) return
+    
+    const { data, error } = await supabase
+      .from('members')
+      .select('*')
+      .eq('team_id', selectedTeam.id)
+      .order('created_at', { ascending: true })
+    
+    if (error) {
+      console.error('Error fetching team members:', error)
+    } else {
+      setTeamMembers(data || [])
     }
   }
 
@@ -329,7 +377,13 @@ function App() {
       // ログイン成功
       setSelectedTeam(existingMember.teams)
       alert(`ようこそ、${username}さん！前回のスコア: ${existingMember.score}点`)
-      setScreen('quiz')
+      
+      // マスターアカウントの場合は直接クイズへ
+      if (username === 'kawase' && password === '123') {
+        setScreen('quiz')
+      } else {
+        setScreen('waiting')
+      }
     } else {
       // 新規登録処理
       // ユーザー名の重複チェック
@@ -362,20 +416,19 @@ function App() {
         return
       }
       
-      // マスターアカウント（kawase / 123）の場合は人数制限をスキップ
+      // マスターアカウント（kawase / 123）の場合は直接クイズへ
       const isMasterAccount = username === 'kawase' && password === '123'
       
-      // 最低人数（5人）をチェック（マスターアカウント以外）
-      if (!isMasterAccount) {
-        const currentMemberCount = members ? members.length : 0
-        if (currentMemberCount < 4) {
-          alert(`このチームは現在${currentMemberCount + 1}人です。クイズを開始するには最低5人必要です。あと${4 - currentMemberCount}人待ってください。`)
-          return
-        }
+      if (isMasterAccount) {
+        setScreen('quiz')
+      } else {
+        setScreen('waiting')
       }
-      
-      setScreen('quiz')
     }
+  }
+
+  const handleStartQuiz = () => {
+    setScreen('quiz')
   }
 
   const handleAnswer = async (answerIndex) => {
@@ -597,6 +650,94 @@ function App() {
               className="flex-1 text-lg py-6 bg-indigo-600 hover:bg-indigo-700"
             >
               {isLogin ? 'ログイン' : 'スタート'}
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    )
+  }
+
+  // 待機画面
+  if (screen === 'waiting') {
+    const memberCount = teamMembers.length
+    const canStart = memberCount >= 5
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl shadow-2xl">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="bg-indigo-600 p-4 rounded-full">
+                <Users className="w-12 h-12 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-3xl font-bold text-indigo-900">
+              {canStart ? 'メンバーが揃いました！' : '待機中...'}
+            </CardTitle>
+            <CardDescription className="text-lg">
+              チーム: <span className="font-bold text-indigo-600">{selectedTeam?.name}</span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="text-center">
+              <p className="text-4xl font-bold text-indigo-600 mb-2">
+                {memberCount} / 10人
+              </p>
+              {!canStart && (
+                <p className="text-gray-600">
+                  クイズを開始するには最低5人必要です
+                  <br />
+                  あと {5 - memberCount} 人待っています...
+                </p>
+              )}
+            </div>
+            
+            <div className="space-y-3">
+              <h3 className="text-xl font-semibold text-center">登録済みメンバー</h3>
+              <div className="bg-white rounded-lg p-4 max-h-64 overflow-y-auto">
+                {teamMembers.length === 0 ? (
+                  <p className="text-gray-500 text-center">メンバーがいません</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {teamMembers.map((member, index) => (
+                      <li
+                        key={member.id}
+                        className={`flex items-center gap-3 p-3 rounded-lg ${
+                          member.name === username
+                            ? 'bg-indigo-100 border-2 border-indigo-500'
+                            : 'bg-gray-50'
+                        }`}
+                      >
+                        <User className="w-5 h-5 text-indigo-600" />
+                        <span className="font-semibold">
+                          {index + 1}. {member.name}
+                          {member.name === username && ' (あなた)'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex gap-2">
+            <Button
+              onClick={() => {
+                setScreen('team_select')
+                setUsername('')
+                setPassword('')
+              }}
+              variant="outline"
+              className="flex-1 text-lg py-6"
+            >
+              戻る
+            </Button>
+            <Button
+              onClick={handleStartQuiz}
+              disabled={!canStart}
+              className="flex-1 text-lg py-6 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300"
+            >
+              {canStart ? 'クイズを開始する' : '人数が足りません'}
             </Button>
           </CardFooter>
         </Card>
