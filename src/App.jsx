@@ -258,6 +258,22 @@ function App() {
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) return
     
+    // チーム数をチェック
+    const { data: existingTeams, error: countError } = await supabase
+      .from('teams')
+      .select('id')
+    
+    if (countError) {
+      console.error('Error checking team count:', countError)
+      alert('エラーが発生しました。もう一度お試しください。')
+      return
+    }
+    
+    if (existingTeams && existingTeams.length >= 15) {
+      alert('チーム数が上限（15チーム）に達しています。既存のチームを選択してください。')
+      return
+    }
+    
     const { data, error } = await supabase
       .from('teams')
       .insert([{ name: newTeamName, total_score: 0 }])
@@ -297,6 +313,14 @@ function App() {
     if (members && members.length >= 10) {
       alert('このチームは既に10人のメンバーが登録されています。別のチームを選択してください。')
       setScreen('team_select')
+      return
+    }
+    
+    // 最低人数（5人）をチェック
+    const currentMemberCount = members ? members.length : 0
+    if (currentMemberCount < 4) {
+      // 現在のメンバー数が4人以下の場合、5人目になるまで待つ
+      alert(`このチームは現在${currentMemberCount + 1}人です。クイズを開始するには最低5人必要です。あと${4 - currentMemberCount}人待ってください。`)
       return
     }
     
