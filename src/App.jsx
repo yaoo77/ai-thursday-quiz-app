@@ -227,6 +227,8 @@ function App() {
   const [teamRankings, setTeamRankings] = useState([])
   const [teamMembers, setTeamMembers] = useState([])
   const [teamTotalScore, setTeamTotalScore] = useState(0)
+  const [isMaster, setIsMaster] = useState(false) // マスターかどうか
+  const [currentMember, setCurrentMember] = useState(null) // 現在のメンバー情報
 
   // チーム一覧を取得
   useEffect(() => {
@@ -234,13 +236,13 @@ function App() {
   }, [])
 
   // 待機画面でチームメンバーをリアルタイム取得
+    // 待機画面のリアルタイム更新
   useEffect(() => {
     if (screen === 'waiting' && selectedTeam) {
       fetchTeamMembers()
       
-      // Supabaseのリアルタイム更新を設定
-      const channel = supabase
-        .channel(`team-${selectedTeam.id}-members`)
+      const membersChannel = supabase
+        .channel('members-changes')
         .on(
           'postgres_changes',
           {
@@ -250,19 +252,100 @@ function App() {
             filter: `team_id=eq.${selectedTeam.id}`
           },
           (payload) => {
-            console.log('リアルタイム更新:', payload)
+            console.log('メンバーリアルタイム更新:', payload)
             fetchTeamMembers()
           }
         )
         .subscribe((status) => {
-          console.log('サブスクリプション状態:', status)
+          console.log('メンバーサブスクリプション状態:', status)
+        })
+      
+      const teamsChannel = supabase
+        .channel('teams-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'teams',
+            filter: `id=eq.${selectedTeam.id}`
+          },
+          (payload) => {
+            console.log('チームリアルタイム更新:', payload)
+            // current_questionが変更されたらクイズ画面に遷移
+            if (payload.new.current_question !== undefined && payload.new.current_question > 0) {
+              setCurrentQuestion(payload.new.current_question - 1) // DBは1始まり、アプリは0始まり
+              setScreen('quiz')
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('チームサブスクリプション状態:', status)
         })
       
       return () => {
-        supabase.removeChannel(channel)
+        supabase.removeChannel(membersChannel)
+        supabase.removeChannel(teamsChannel)
       }
     }
   }, [screen, selectedTeam])
+  
+  // クイズ画面でのリアルタイム更新
+  useEffect(() => {
+    if (screen === 'quiz' && selectedTeam) {
+      fetchTeamMembers()
+      
+      const membersChannel = supabase
+        .channel('quiz-members-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'members',
+            filter: `team_id=eq.${selectedTeam.id}`
+          },
+          (payload) => {
+            console.log('クイズ中メンバー更新:', payload)
+            fetchTeamMembers()
+          }
+        )
+        .subscribe((status) => {
+          console.log('クイズ中メンバーサブスクリプション状態:', status)
+        })
+      
+      const teamsChannel = supabase
+        .channel('quiz-teams-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'teams',
+            filter: `id=eq.${selectedTeam.id}`
+          },
+          (payload) => {
+            console.log('クイズ中チーム更新:', payload)
+            // マスターが問題を進めたら同期
+            if (payload.new.current_question !== undefined && !isMaster) {
+              const newQuestion = payload.new.current_question - 1 // DBは1始まり、アプリは0始まり
+              if (newQuestion !== currentQuestion) {
+                setCurrentQuestion(newQuestion)
+                setShowFeedback(false)
+              }
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('クイズ中チームサブスクリプション状態:', status)
+        })
+      
+      return () => {
+        supabase.removeChannel(membersChannel)
+        supabase.removeChannel(teamsChannel)
+      }
+    }
+  }, [screen, selectedTeam, isMaster, currentQuestion])
 
   const fetchTeams = async () => {
     const { data, error } = await supabase
@@ -378,6 +461,13 @@ function App() {
       
       // ログイン成功
       setSelectedTeam(existingMember.teams)
+      setCurrentMember(existingMember)
+      
+      // マスターかどうかチェック
+      if (existingMember.teams.master_user_id === existingMember.id) {
+        setIsMaster(true)
+      }
+      
       alert(`ようこそ、${username}さん！前回のスコア: ${existingMember.score}点`)
       
       // マスターアカウントの場合は直接クイズへ
@@ -435,6 +525,22 @@ function App() {
       }
       
       const newMember = newMembers[0]
+      setCurrentMember(newMember)
+      
+      // このチームの最初のメンバーかどうかチェック
+      const isFirstMember = !members || members.length === 0
+      
+      // 最初のメンバーの場合、マスターとして設定
+      if (isFirstMember) {
+        const { error: updateError } = await supabase
+          .from('teams')
+          .update({ master_user_id: newMember.id })
+          .eq('id', selectedTeam.id)
+        
+        if (!updateError) {
+          setIsMaster(true)
+        }
+      }
       
       // マスターアカウント（kawase / 123）の場合は直接クイズへ
       const isMasterAccount = username === 'kawase' && password === '123'
@@ -447,8 +553,95 @@ function App() {
     }
   }
 
-  const handleStartQuiz = () => {
-    setScreen('quiz')
+  const handleStartQuiz = async () => {
+    if (isMaster) {
+      // マスターの場合、current_questionを0から1に設定してクイズを開始
+      const { error } = await supabase
+        .from('teams')
+        .update({ current_question: 1 })
+        .eq('id', selectedTeam.id)
+      
+      if (error) {
+        console.error('Error starting quiz:', error)
+        alert('クイズの開始に失敗しました。')
+        return
+      }
+      
+      setCurrentQuestion(0)
+      setScreen('quiz')
+    } else {
+      setScreen('quiz')
+    }
+  }
+  
+  const handleNextQuestion = async (force = false) => {
+    if (!isMaster) return
+    
+    // 全員が回答したかチェック
+    const { data: members, error } = await supabase
+      .from('members')
+      .select('has_answered_current')
+      .eq('team_id', selectedTeam.id)
+    
+    if (error) {
+      console.error('Error checking members:', error)
+      return
+    }
+    
+    const unansweredCount = members.filter(m => !m.has_answered_current).length
+    
+    if (!force && unansweredCount > 0) {
+      const confirmed = window.confirm(`まだ${unansweredCount}人が回答していません。本当に次の問題に進みますか？`)
+      if (!confirmed) return
+    }
+    
+    const nextQuestion = currentQuestion + 1
+    
+    if (nextQuestion >= QUIZ_DATA.length) {
+      // クイズ終了
+      await handleQuizComplete(score)
+      return
+    }
+    
+    // current_questionを更新
+    const { error: updateError } = await supabase
+      .from('teams')
+      .update({ current_question: nextQuestion + 1 })
+      .eq('id', selectedTeam.id)
+    
+    if (updateError) {
+      console.error('Error updating current_question:', updateError)
+      return
+    }
+    
+    // 全員のhas_answered_currentをリセット
+    await supabase
+      .from('members')
+      .update({ has_answered_current: false })
+      .eq('team_id', selectedTeam.id)
+    
+    setCurrentQuestion(nextQuestion)
+  }
+  
+  const handleBecomeMaster = async () => {
+    if (!currentMember || !selectedTeam) return
+    
+    const confirmed = window.confirm('マスター権限を引き継ぎますか？\n（前のマスターがログインしている場合、同時に2人のマスターが存在することになります）')
+    if (!confirmed) return
+    
+    const { error } = await supabase
+      .from('teams')
+      .update({ master_user_id: currentMember.id })
+      .eq('id', selectedTeam.id)
+    
+    if (error) {
+      console.error('Error updating master:', error)
+      alert('マスター権限の引き継ぎに失敗しました。')
+      return
+    }
+    
+    setIsMaster(true)
+    alert('マスター権限を引き継ぎました！')
   }
 
   const handleAnswer = async (answerIndex) => {
@@ -465,68 +658,65 @@ function App() {
     
     setLastAnswerCorrect(correct)
     setShowFeedback(true)
+    
+    // マスターモード: 回答済みフラグを更新
+    if (currentMember) {
+      await supabase
+        .from('members')
+        .update({ has_answered_current: true })
+        .eq('id', currentMember.id)
+    }
 
-    setTimeout(async () => {
-      setShowFeedback(false)
-      if (currentQuestion < QUIZ_DATA.length - 1) {
-        setCurrentQuestion(currentQuestion + 1)
-      } else {
-        const finalScore = correct ? score + 1 : score
-        
-        // メンバーをデータベースに追加（新規登録の場合のみ）
-        if (!isLogin) {
-          const { data: memberData, error: memberError } = await supabase
-            .from('members')
-            .insert([{
-              name: username,
-              team_id: selectedTeam.id,
-              score: finalScore,
-              password: password
-            }])
-            .select()
-          
-          if (memberError) {
-            console.error('Error adding member:', memberError)
-          }
+    // マスターモードでは自動進行しない
+    if (!isMaster) {
+      setTimeout(async () => {
+        setShowFeedback(false)
+        if (currentQuestion < QUIZ_DATA.length - 1) {
+          setCurrentQuestion(currentQuestion + 1)
         } else {
-          // ログインユーザーのスコアを更新
-          const { error: updateError } = await supabase
-            .from('members')
-            .update({ score: finalScore })
-            .eq('name', username)
-          
-          if (updateError) {
-            console.error('Error updating member score:', updateError)
-          }
+          await handleQuizComplete(correct ? score + 1 : score)
         }
-
-        // チームの合計得点を更新
-        const { data: teamData, error: teamError } = await supabase
-          .from('teams')
-          .update({ total_score: selectedTeam.total_score + finalScore })
-          .eq('id', selectedTeam.id)
-          .select()
-        
-        if (teamError) {
-          console.error('Error updating team score:', teamError)
-        }
-        
-        await fetchTeamRankings()
-        
-        // チームの合計スコアを取得
-        const { data: teamMembersData, error: membersError } = await supabase
-          .from('members')
-          .select('score')
-          .eq('team_id', selectedTeam.id)
-        
-        if (!membersError && teamMembersData) {
-          const total = teamMembersData.reduce((sum, member) => sum + (member.score || 0), 0)
-          setTeamTotalScore(total)
-        }
-        
-        setScreen('result')
+      }, 1500)
+    } else {
+      // マスターの場合、フィードバックを非表示にするだけ
+      setTimeout(() => {
+        setShowFeedback(false)
+      }, 1500)
+    }
+  }
+  
+  const handleQuizComplete = async (finalScore) => {
+    // メンバーのスコアを更新
+    if (currentMember) {
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({ score: finalScore })
+        .eq('id', currentMember.id)
+      
+      if (updateError) {
+        console.error('Error updating member score:', updateError)
       }
-    }, 1500)
+    }
+
+    // チームの合計得点を再計算
+    const { data: teamMembersData, error: membersError } = await supabase
+      .from('members')
+      .select('score')
+      .eq('team_id', selectedTeam.id)
+    
+    if (!membersError && teamMembersData) {
+      const total = teamMembersData.reduce((sum, member) => sum + (member.score || 0), 0)
+      setTeamTotalScore(total)
+      
+      // チームの合計スコアを更新
+      await supabase
+        .from('teams')
+        .update({ total_score: total })
+        .eq('id', selectedTeam.id)
+    }
+    
+    await fetchTeamRankings()
+    setScreen('result')
   }
 
   const handleReset = () => {
@@ -752,25 +942,36 @@ function App() {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="flex gap-2">
-            <Button
-              onClick={() => {
-                setScreen('team_select')
-                setUsername('')
-                setPassword('')
-              }}
-              variant="outline"
-              className="flex-1 text-lg py-6"
-            >
-              戻る
-            </Button>
-            <Button
-              onClick={handleStartQuiz}
-              disabled={!canStart}
-              className="flex-1 text-lg py-6 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300"
-            >
-              {canStart ? 'クイズを開始する' : '人数が足りません'}
-            </Button>
+          <CardFooter className="flex flex-col gap-2">
+            {!isMaster && canStart && (
+              <Button
+                onClick={handleBecomeMaster}
+                variant="outline"
+                className="w-full text-sm py-3 border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+              >
+                マスター権限を引き継ぐ
+              </Button>
+            )}
+            <div className="flex gap-2 w-full">
+              <Button
+                onClick={() => {
+                  setScreen('team_select')
+                  setUsername('')
+                  setPassword('')
+                }}
+                variant="outline"
+                className="flex-1 text-lg py-6"
+              >
+                戻る
+              </Button>
+              <Button
+                onClick={handleStartQuiz}
+                disabled={!canStart || !isMaster}
+                className="flex-1 text-lg py-6 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300"
+              >
+                {!isMaster ? 'マスターのみ開始可能' : canStart ? 'クイズを開始する' : '人数が足りません'}
+              </Button>
+            </div>
           </CardFooter>
         </Card>
       </div>
@@ -779,6 +980,11 @@ function App() {
 
   // クイズ画面（既存のコードを使用）
   if (screen === 'quiz') {
+    const currentQuiz = QUIZ_DATA[currentQuestion]
+    const answeredCount = teamMembers.filter(m => m.has_answered_current).length
+    const totalMembers = teamMembers.length
+    const allAnswered = answeredCount === totalMembers
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-4xl shadow-2xl">
@@ -789,8 +995,16 @@ function App() {
               </span>
               <span className="text-sm font-semibold text-indigo-600">
                 {username} ({selectedTeam?.name})
+                {isMaster && <span className="ml-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs">マスター</span>}
               </span>
             </div>
+            {isMaster && (
+              <div className="mb-2 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
+                <p className="text-sm font-semibold text-yellow-800">
+                  回答状況: {answeredCount} / {totalMembers}人が回答済み
+                </p>
+              </div>
+            )}
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div 
                 className="bg-indigo-600 h-3 rounded-full transition-all duration-300"
@@ -940,6 +1154,40 @@ function App() {
                     <span className="font-bold text-lg">不正解</span>
                   </>
                 )}
+              </div>
+            )}
+            
+            {isMaster && !showFeedback && (
+              <div className="space-y-3 mt-6 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
+                <p className="text-sm font-semibold text-yellow-900 text-center">マスターコントロール</p>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => handleNextQuestion(false)}
+                    disabled={!allAnswered}
+                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
+                  >
+                    次の問題へ {!allAnswered && `(待機中: ${totalMembers - answeredCount}人)`}
+                  </Button>
+                  <Button
+                    onClick={() => handleNextQuestion(true)}
+                    variant="destructive"
+                    className="flex-1"
+                  >
+                    強制的に次へ
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {!isMaster && !showFeedback && (
+              <div className="mt-6">
+                <Button
+                  onClick={handleBecomeMaster}
+                  variant="outline"
+                  className="w-full border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+                >
+                  マスター権限を引き継ぐ
+                </Button>
               </div>
             )}
           </CardContent>
