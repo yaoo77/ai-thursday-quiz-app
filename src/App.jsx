@@ -947,12 +947,12 @@ function App() {
               <Button
                 onClick={handleBecomeMaster}
                 variant="outline"
-                className="w-full text-sm py-3 border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+                className="w-full text-xs sm:text-sm py-2 sm:py-3 border-yellow-500 text-yellow-700 hover:bg-yellow-50"
               >
                 マスター権限を引き継ぐ
               </Button>
             )}
-            <div className="flex gap-2 w-full">
+            <div className="flex flex-col sm:flex-row gap-2 w-full">
               <Button
                 onClick={() => {
                   setScreen('team_select')
@@ -960,14 +960,14 @@ function App() {
                   setPassword('')
                 }}
                 variant="outline"
-                className="flex-1 text-lg py-6"
+                className="w-full sm:flex-1 text-sm sm:text-lg py-4 sm:py-6"
               >
                 戻る
               </Button>
               <Button
                 onClick={handleStartQuiz}
                 disabled={!canStart || !isMaster}
-                className="flex-1 text-lg py-6 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300"
+                className="w-full sm:flex-1 text-xs sm:text-lg py-4 sm:py-6 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300"
               >
                 {!isMaster ? 'マスターのみ開始可能' : canStart ? 'クイズを開始する' : '人数が足りません'}
               </Button>
@@ -1037,14 +1037,14 @@ function App() {
             )}
 
             <div className="grid grid-cols-1 gap-3">
-              {currentQuiz.type === 'multiple' && currentQuiz.options.map((option, index) => (
+              {currentQuiz.options && currentQuiz.options.map((option, index) => (
                 <Button
                   key={index}
                   onClick={() => handleAnswer(index)}
                   disabled={showFeedback}
-                  className={`p-6 text-left justify-start h-auto whitespace-normal ${
+                  className={`p-3 sm:p-6 text-sm sm:text-lg justify-start ${
                     showFeedback
-                      ? index === currentQuiz.answer
+                      ? currentQuiz.answer === index
                         ? 'bg-green-500 hover:bg-green-600'
                         : answers[answers.length - 1]?.answer === index
                         ? 'bg-red-500 hover:bg-red-600'
@@ -1053,8 +1053,8 @@ function App() {
                   }`}
                   variant={showFeedback ? 'default' : 'outline'}
                 >
-                  <span className="font-bold mr-3">{['①', '②', '③', '④'][index]}</span>
-                  <span className="text-base">{option}</span>
+                  <span className="font-bold mr-2 sm:mr-3 text-base sm:text-lg">{['①', '②', '③', '④'][index]}</span>
+                  <span className="text-sm sm:text-base break-words">{option}</span>
                 </Button>
               ))}
               
@@ -1063,7 +1063,7 @@ function App() {
                   <Button
                     onClick={() => handleAnswer(0)}
                     disabled={showFeedback}
-                    className={`p-6 text-lg ${
+                    className={`p-4 sm:p-6 text-base sm:text-lg ${
                       showFeedback
                         ? currentQuiz.answer === 0
                           ? 'bg-green-500 hover:bg-green-600'
@@ -1079,7 +1079,7 @@ function App() {
                   <Button
                     onClick={() => handleAnswer(1)}
                     disabled={showFeedback}
-                    className={`p-6 text-lg ${
+                    className={`p-4 sm:p-6 text-base sm:text-lg ${
                       showFeedback
                         ? currentQuiz.answer === 1
                           ? 'bg-green-500 hover:bg-green-600'
@@ -1100,7 +1100,7 @@ function App() {
                   <Button
                     onClick={() => handleAnswer(0)}
                     disabled={showFeedback}
-                    className={`p-6 text-left justify-start h-auto whitespace-normal ${
+                    className={`p-3 sm:p-6 text-left justify-start h-auto whitespace-normal ${
                       showFeedback
                         ? currentQuiz.answer === 0
                           ? 'bg-green-500 hover:bg-green-600'
@@ -1112,14 +1112,14 @@ function App() {
                     variant={showFeedback ? 'default' : 'outline'}
                   >
                     <div>
-                      <p className="font-bold mb-2">文章A</p>
-                      <p className="text-sm">{currentQuiz.textA}</p>
+                      <p className="font-bold mb-1 sm:mb-2 text-sm sm:text-base">文章A</p>
+                      <p className="text-xs sm:text-sm">{currentQuiz.textA}</p>
                     </div>
                   </Button>
                   <Button
                     onClick={() => handleAnswer(1)}
                     disabled={showFeedback}
-                    className={`p-6 text-left justify-start h-auto whitespace-normal ${
+                    className={`p-3 sm:p-6 text-left justify-start h-auto whitespace-normal ${
                       showFeedback
                         ? currentQuiz.answer === 1
                           ? 'bg-green-500 hover:bg-green-600'
@@ -1131,8 +1131,8 @@ function App() {
                     variant={showFeedback ? 'default' : 'outline'}
                   >
                     <div>
-                      <p className="font-bold mb-2">文章B</p>
-                      <p className="text-sm">{currentQuiz.textB}</p>
+                      <p className="font-bold mb-1 sm:mb-2 text-sm sm:text-base">文章B</p>
+                      <p className="text-xs sm:text-sm">{currentQuiz.textB}</p>
                     </div>
                   </Button>
                 </>
@@ -1158,20 +1158,20 @@ function App() {
             )}
             
             {isMaster && !showFeedback && (
-              <div className="space-y-3 mt-6 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
-                <p className="text-sm font-semibold text-yellow-900 text-center">マスターコントロール</p>
-                <div className="flex gap-3">
+              <div className="space-y-3 mt-6 p-3 sm:p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
+                <p className="text-xs sm:text-sm font-semibold text-yellow-900 text-center">マスターコントロール</p>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <Button
                     onClick={() => handleNextQuestion(false)}
                     disabled={!allAnswered}
-                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300"
+                    className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-xs sm:text-sm py-2 sm:py-3"
                   >
                     次の問題へ {!allAnswered && `(待機中: ${totalMembers - answeredCount}人)`}
                   </Button>
                   <Button
                     onClick={() => handleNextQuestion(true)}
                     variant="destructive"
-                    className="flex-1"
+                    className="w-full sm:flex-1 text-xs sm:text-sm py-2 sm:py-3"
                   >
                     強制的に次へ
                   </Button>
@@ -1180,11 +1180,11 @@ function App() {
             )}
             
             {!isMaster && !showFeedback && (
-              <div className="mt-6">
+              <div className="mt-4 sm:mt-6">
                 <Button
                   onClick={handleBecomeMaster}
                   variant="outline"
-                  className="w-full border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+                  className="w-full border-yellow-500 text-yellow-700 hover:bg-yellow-50 text-xs sm:text-sm py-2 sm:py-3"
                 >
                   マスター権限を引き継ぐ
                 </Button>
