@@ -245,7 +245,7 @@ function App() {
       fetchTeamMembers()
       
       const membersChannel = supabase
-        .channel('members-changes')
+        .channel(`waiting-members-${selectedTeam.id}-${Date.now()}`)
         .on(
           'postgres_changes',
           {
@@ -264,7 +264,7 @@ function App() {
         })
       
       const teamsChannel = supabase
-        .channel('teams-changes')
+        .channel(`waiting-teams-${selectedTeam.id}-${Date.now()}`)
         .on(
           'postgres_changes',
           {
@@ -305,7 +305,7 @@ function App() {
       fetchTeamMembers()
       
       const membersChannel = supabase
-        .channel('quiz-members-changes')
+        .channel(`quiz-members-${selectedTeam.id}-${Date.now()}`)
         .on(
           'postgres_changes',
           {
@@ -324,7 +324,7 @@ function App() {
         })
       
       const teamsChannel = supabase
-        .channel('quiz-teams-changes')
+        .channel(`quiz-teams-${selectedTeam.id}-${Date.now()}`)
         .on(
           'postgres_changes',
           {
