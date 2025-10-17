@@ -229,6 +229,9 @@ function App() {
   const [teamTotalScore, setTeamTotalScore] = useState(0)
   const [isMaster, setIsMaster] = useState(false) // マスターかどうか
   const [currentMember, setCurrentMember] = useState(null) // 現在のメンバー情報
+  const [selectedAnswer, setSelectedAnswer] = useState(null) // 選択中の回答
+  const [hasSubmitted, setHasSubmitted] = useState(false) // 回答を確定したか
+  const [showResult, setShowResult] = useState(false) // 結果を表示するか
 
   // チーム一覧を取得
   useEffect(() => {
@@ -620,6 +623,11 @@ function App() {
       .update({ has_answered_current: false })
       .eq('team_id', selectedTeam.id)
     
+    // 状態をリセット
+    setSelectedAnswer(null)
+    setHasSubmitted(false)
+    setShowResult(false)
+    setShowFeedback(false)
     setCurrentQuestion(nextQuestion)
   }
   
@@ -644,20 +652,27 @@ function App() {
     alert('マスター権限を引き継ぎました！')
   }
 
-  const handleAnswer = async (answerIndex) => {
-    if (showFeedback) return
+  // 選択肢を選択する（確定はしない）
+  const handleSelectAnswer = (answerIndex) => {
+    if (hasSubmitted) return
+    setSelectedAnswer(answerIndex)
+  }
+  
+  // 回答を確定する（マスターのみ）
+  const handleSubmitAnswer = async () => {
+    if (selectedAnswer === null || hasSubmitted) return
     
     const currentQuiz = QUIZ_DATA[currentQuestion]
-    const correct = answerIndex === currentQuiz.answer
+    const correct = selectedAnswer === currentQuiz.answer
     
-    setAnswers([...answers, { question: currentQuestion, answer: answerIndex, correct }])
+    setAnswers([...answers, { question: currentQuestion, answer: selectedAnswer, correct }])
     
     if (correct) {
       setScore(score + 1)
     }
     
     setLastAnswerCorrect(correct)
-    setShowFeedback(true)
+    setHasSubmitted(true)
     
     // マスターモード: 回答済みフラグを更新
     if (currentMember) {
@@ -666,23 +681,12 @@ function App() {
         .update({ has_answered_current: true })
         .eq('id', currentMember.id)
     }
-
-    // マスターモードでは自動進行しない
-    if (!isMaster) {
-      setTimeout(async () => {
-        setShowFeedback(false)
-        if (currentQuestion < QUIZ_DATA.length - 1) {
-          setCurrentQuestion(currentQuestion + 1)
-        } else {
-          await handleQuizComplete(correct ? score + 1 : score)
-        }
-      }, 1500)
-    } else {
-      // マスターの場合、フィードバックを非表示にするだけ
-      setTimeout(() => {
-        setShowFeedback(false)
-      }, 1500)
-    }
+  }
+  
+  // 結果を表示する
+  const handleShowResult = () => {
+    setShowResult(true)
+    setShowFeedback(true)
   }
   
   const handleQuizComplete = async (finalScore) => {
@@ -1040,18 +1044,20 @@ function App() {
               {currentQuiz.options && currentQuiz.options.map((option, index) => (
                 <Button
                   key={index}
-                  onClick={() => handleAnswer(index)}
-                  disabled={showFeedback}
+                  onClick={() => handleSelectAnswer(index)}
+                  disabled={hasSubmitted}
                   className={`p-3 sm:p-6 text-sm sm:text-lg justify-start h-auto whitespace-normal ${
-                    showFeedback
+                    showResult
                       ? currentQuiz.answer === index
                         ? 'bg-green-500 hover:bg-green-600'
-                        : answers[answers.length - 1]?.answer === index
+                        : selectedAnswer === index
                         ? 'bg-red-500 hover:bg-red-600'
                         : 'bg-gray-300'
+                      : selectedAnswer === index
+                      ? 'bg-indigo-200 border-indigo-500 border-2'
                       : 'bg-white hover:bg-indigo-50 text-gray-900'
                   }`}
-                  variant={showFeedback ? 'default' : 'outline'}
+                  variant={showResult ? 'default' : 'outline'}
                 >
                   <span className="font-bold mr-2 sm:mr-3 text-base sm:text-lg flex-shrink-0">{['①', '②', '③', '④'][index]}</span>
                   <span className="text-sm sm:text-base break-words overflow-wrap-anywhere flex-1 text-left">{option}</span>
@@ -1061,34 +1067,38 @@ function App() {
               {(currentQuiz.type === 'image' || currentQuiz.type === 'image_comparison') && (
                 <>
                   <Button
-                    onClick={() => handleAnswer(0)}
-                    disabled={showFeedback}
+                    onClick={() => handleSelectAnswer(0)}
+                    disabled={hasSubmitted}
                     className={`p-4 sm:p-6 text-base sm:text-lg h-auto ${
-                      showFeedback
+                      showResult
                         ? currentQuiz.answer === 0
                           ? 'bg-green-500 hover:bg-green-600'
-                          : answers[answers.length - 1]?.answer === 0
+                          : selectedAnswer === 0
                           ? 'bg-red-500 hover:bg-red-600'
                           : 'bg-gray-300'
+                        : selectedAnswer === 0
+                        ? 'bg-indigo-200 border-indigo-500 border-2'
                         : 'bg-white hover:bg-indigo-50 text-gray-900'
                     }`}
-                    variant={showFeedback ? 'default' : 'outline'}
+                    variant={showResult ? 'default' : 'outline'}
                   >
                     A
                   </Button>
                   <Button
-                    onClick={() => handleAnswer(1)}
-                    disabled={showFeedback}
+                    onClick={() => handleSelectAnswer(1)}
+                    disabled={hasSubmitted}
                     className={`p-4 sm:p-6 text-base sm:text-lg h-auto ${
-                      showFeedback
+                      showResult
                         ? currentQuiz.answer === 1
                           ? 'bg-green-500 hover:bg-green-600'
-                          : answers[answers.length - 1]?.answer === 1
+                          : selectedAnswer === 1
                           ? 'bg-red-500 hover:bg-red-600'
                           : 'bg-gray-300'
+                        : selectedAnswer === 1
+                        ? 'bg-indigo-200 border-indigo-500 border-2'
                         : 'bg-white hover:bg-indigo-50 text-gray-900'
                     }`}
-                    variant={showFeedback ? 'default' : 'outline'}
+                    variant={showResult ? 'default' : 'outline'}
                   >
                     B
                   </Button>
@@ -1098,18 +1108,20 @@ function App() {
               {currentQuiz.type === 'text_comparison' && (
                 <>
                   <Button
-                    onClick={() => handleAnswer(0)}
-                    disabled={showFeedback}
+                    onClick={() => handleSelectAnswer(0)}
+                    disabled={hasSubmitted}
                     className={`p-3 sm:p-6 text-left justify-start h-auto whitespace-normal ${
-                      showFeedback
+                      showResult
                         ? currentQuiz.answer === 0
                           ? 'bg-green-500 hover:bg-green-600'
-                          : answers[answers.length - 1]?.answer === 0
+                          : selectedAnswer === 0
                           ? 'bg-red-500 hover:bg-red-600'
                           : 'bg-gray-300'
+                        : selectedAnswer === 0
+                        ? 'bg-indigo-200 border-indigo-500 border-2'
                         : 'bg-white hover:bg-indigo-50 text-gray-900'
                     }`}
-                    variant={showFeedback ? 'default' : 'outline'}
+                    variant={showResult ? 'default' : 'outline'}
                   >
                     <div className="w-full">
                       <p className="font-bold mb-1 sm:mb-2 text-sm sm:text-base">文章A</p>
@@ -1117,18 +1129,20 @@ function App() {
                     </div>
                   </Button>
                   <Button
-                    onClick={() => handleAnswer(1)}
-                    disabled={showFeedback}
+                    onClick={() => handleSelectAnswer(1)}
+                    disabled={hasSubmitted}
                     className={`p-3 sm:p-6 text-left justify-start h-auto whitespace-normal ${
-                      showFeedback
+                      showResult
                         ? currentQuiz.answer === 1
                           ? 'bg-green-500 hover:bg-green-600'
-                          : answers[answers.length - 1]?.answer === 1
+                          : selectedAnswer === 1
                           ? 'bg-red-500 hover:bg-red-600'
                           : 'bg-gray-300'
+                        : selectedAnswer === 1
+                        ? 'bg-indigo-200 border-indigo-500 border-2'
                         : 'bg-white hover:bg-indigo-50 text-gray-900'
                     }`}
-                    variant={showFeedback ? 'default' : 'outline'}
+                    variant={showResult ? 'default' : 'outline'}
                   >
                     <div className="w-full">
                       <p className="font-bold mb-1 sm:mb-2 text-sm sm:text-base">文章B</p>
@@ -1139,7 +1153,7 @@ function App() {
               )}
             </div>
 
-            {showFeedback && (
+            {showResult && (
               <div className={`flex items-center justify-center gap-2 p-4 rounded-lg ${
                 lastAnswerCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
               }`}>
@@ -1157,7 +1171,37 @@ function App() {
               </div>
             )}
             
-            {isMaster && !showFeedback && (
+            {/* 選択後のボタン */}
+            {selectedAnswer !== null && !hasSubmitted && (
+              <div className="mt-4">
+                {isMaster ? (
+                  <Button
+                    onClick={handleSubmitAnswer}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
+                  >
+                    回答する
+                  </Button>
+                ) : (
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800">選択完了！マスターが「回答する」を押すまで待機中...</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* 回答確定後、結果表示前 */}
+            {hasSubmitted && !showResult && (
+              <div className="mt-4">
+                <Button
+                  onClick={handleShowResult}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white py-3"
+                >
+                  結果を見る
+                </Button>
+              </div>
+            )}
+            
+            {isMaster && showResult && (
               <div className="space-y-3 mt-6 p-3 sm:p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
                 <p className="text-xs sm:text-sm font-semibold text-yellow-900 text-center">マスターコントロール</p>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
@@ -1179,7 +1223,7 @@ function App() {
               </div>
             )}
             
-            {!isMaster && !showFeedback && (
+            {!isMaster && !hasSubmitted && (
               <div className="mt-4 sm:mt-6">
                 <Button
                   onClick={handleBecomeMaster}
