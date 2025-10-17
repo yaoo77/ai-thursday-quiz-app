@@ -226,6 +226,7 @@ function App() {
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false)
   const [teamRankings, setTeamRankings] = useState([])
   const [teamMembers, setTeamMembers] = useState([])
+  const [teamTotalScore, setTeamTotalScore] = useState(0)
 
   // チーム一覧を取得
   useEffect(() => {
@@ -511,6 +512,18 @@ function App() {
         }
         
         await fetchTeamRankings()
+        
+        // チームの合計スコアを取得
+        const { data: teamMembersData, error: membersError } = await supabase
+          .from('members')
+          .select('score')
+          .eq('team_id', selectedTeam.id)
+        
+        if (!membersError && teamMembersData) {
+          const total = teamMembersData.reduce((sum, member) => sum + (member.score || 0), 0)
+          setTeamTotalScore(total)
+        }
+        
         setScreen('result')
       }
     }, 1500)
@@ -953,9 +966,9 @@ function App() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-center p-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg text-white">
-              <p className="text-2xl mb-2">あなたのスコア</p>
-              <p className="text-6xl font-bold">{score} / {QUIZ_DATA.length}</p>
-              <p className="text-xl mt-4">正答率: {Math.round((score / QUIZ_DATA.length) * 100)}%</p>
+              <p className="text-2xl mb-2">チームの合計スコア</p>
+              <p className="text-6xl font-bold">{teamTotalScore}点</p>
+              <p className="text-xl mt-4">あなたのスコア: {score} / {QUIZ_DATA.length} (正答率: {Math.round((score / QUIZ_DATA.length) * 100)}%)</p>
             </div>
 
             <div className="space-y-4">
