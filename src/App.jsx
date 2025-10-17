@@ -1042,7 +1042,7 @@ function App() {
                   key={index}
                   onClick={() => handleAnswer(index)}
                   disabled={showFeedback}
-                  className={`p-3 sm:p-6 text-sm sm:text-lg justify-start ${
+                  className={`p-3 sm:p-6 text-sm sm:text-lg justify-start h-auto whitespace-normal ${
                     showFeedback
                       ? currentQuiz.answer === index
                         ? 'bg-green-500 hover:bg-green-600'
@@ -1053,8 +1053,8 @@ function App() {
                   }`}
                   variant={showFeedback ? 'default' : 'outline'}
                 >
-                  <span className="font-bold mr-2 sm:mr-3 text-base sm:text-lg">{['①', '②', '③', '④'][index]}</span>
-                  <span className="text-sm sm:text-base break-words">{option}</span>
+                  <span className="font-bold mr-2 sm:mr-3 text-base sm:text-lg flex-shrink-0">{['①', '②', '③', '④'][index]}</span>
+                  <span className="text-sm sm:text-base break-words overflow-wrap-anywhere flex-1 text-left">{option}</span>
                 </Button>
               ))}
               
@@ -1063,7 +1063,7 @@ function App() {
                   <Button
                     onClick={() => handleAnswer(0)}
                     disabled={showFeedback}
-                    className={`p-4 sm:p-6 text-base sm:text-lg ${
+                    className={`p-4 sm:p-6 text-base sm:text-lg h-auto ${
                       showFeedback
                         ? currentQuiz.answer === 0
                           ? 'bg-green-500 hover:bg-green-600'
@@ -1079,7 +1079,7 @@ function App() {
                   <Button
                     onClick={() => handleAnswer(1)}
                     disabled={showFeedback}
-                    className={`p-4 sm:p-6 text-base sm:text-lg ${
+                    className={`p-4 sm:p-6 text-base sm:text-lg h-auto ${
                       showFeedback
                         ? currentQuiz.answer === 1
                           ? 'bg-green-500 hover:bg-green-600'
@@ -1111,9 +1111,9 @@ function App() {
                     }`}
                     variant={showFeedback ? 'default' : 'outline'}
                   >
-                    <div>
+                    <div className="w-full">
                       <p className="font-bold mb-1 sm:mb-2 text-sm sm:text-base">文章A</p>
-                      <p className="text-xs sm:text-sm">{currentQuiz.textA}</p>
+                      <p className="text-xs sm:text-sm break-words overflow-wrap-anywhere">{currentQuiz.textA}</p>
                     </div>
                   </Button>
                   <Button
@@ -1130,9 +1130,9 @@ function App() {
                     }`}
                     variant={showFeedback ? 'default' : 'outline'}
                   >
-                    <div>
+                    <div className="w-full">
                       <p className="font-bold mb-1 sm:mb-2 text-sm sm:text-base">文章B</p>
-                      <p className="text-xs sm:text-sm">{currentQuiz.textB}</p>
+                      <p className="text-xs sm:text-sm break-words overflow-wrap-anywhere">{currentQuiz.textB}</p>
                     </div>
                   </Button>
                 </>
