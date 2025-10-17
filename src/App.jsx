@@ -277,7 +277,13 @@ function App() {
             console.log('チームリアルタイム更新:', payload)
             // current_questionが変更されたらクイズ画面に遷移
             if (payload.new.current_question !== undefined && payload.new.current_question > 0) {
+              console.log('クイズ開始検知! current_question:', payload.new.current_question)
               setCurrentQuestion(payload.new.current_question - 1) // DBは1始まり、アプリは0始まり
+              // 状態をリセット
+              setSelectedAnswer(null)
+              setHasSubmitted(false)
+              setShowResult(false)
+              setShowFeedback(false)
               setScreen('quiz')
             }
           }
@@ -333,7 +339,12 @@ function App() {
             if (payload.new.current_question !== undefined && !isMaster) {
               const newQuestion = payload.new.current_question - 1 // DBは1始まり、アプリは0始まり
               if (newQuestion !== currentQuestion) {
+                console.log('問題進行検知! newQuestion:', newQuestion)
                 setCurrentQuestion(newQuestion)
+                // 状態をリセット
+                setSelectedAnswer(null)
+                setHasSubmitted(false)
+                setShowResult(false)
                 setShowFeedback(false)
               }
             }
@@ -652,20 +663,15 @@ function App() {
     alert('マスター権限を引き継ぎました！')
   }
 
-  // 選択肢を選択する（確定はしない）
-  const handleSelectAnswer = (answerIndex) => {
+  // 選択肢を選択して回答確定
+  const handleSelectAnswer = async (answerIndex) => {
     if (hasSubmitted) return
-    setSelectedAnswer(answerIndex)
-  }
-  
-  // 回答を確定する（マスターのみ）
-  const handleSubmitAnswer = async () => {
-    if (selectedAnswer === null || hasSubmitted) return
     
     const currentQuiz = QUIZ_DATA[currentQuestion]
-    const correct = selectedAnswer === currentQuiz.answer
+    const correct = answerIndex === currentQuiz.answer
     
-    setAnswers([...answers, { question: currentQuestion, answer: selectedAnswer, correct }])
+    setSelectedAnswer(answerIndex)
+    setAnswers([...answers, { question: currentQuestion, answer: answerIndex, correct }])
     
     if (correct) {
       setScore(score + 1)
@@ -973,7 +979,7 @@ function App() {
                 disabled={!canStart || !isMaster}
                 className="w-full sm:flex-1 text-xs sm:text-lg py-4 sm:py-6 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300"
               >
-                {!isMaster ? 'マスターのみ開始可能' : canStart ? 'クイズを開始する' : '人数が足りません'}
+                {!isMaster ? 'マスターが開始します' : canStart ? 'クイズを開始する' : '人数が足りません'}
               </Button>
             </div>
           </CardFooter>
@@ -1171,26 +1177,15 @@ function App() {
               </div>
             )}
             
-            {/* 選択後のボタン */}
-            {selectedAnswer !== null && !hasSubmitted && (
-              <div className="mt-4">
-                {isMaster ? (
-                  <Button
-                    onClick={handleSubmitAnswer}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
-                  >
-                    回答する
-                  </Button>
-                ) : (
-                  <div className="text-center p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-800">選択完了！マスターが「回答する」を押すまで待機中...</p>
-                  </div>
-                )}
+            {/* 回答待ち状態 */}
+            {hasSubmitted && !showResult && !allAnswered && (
+              <div className="mt-4 text-center p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">回答完了！他のメンバーを待っています... ({answeredCount} / {totalMembers}人)</p>
               </div>
             )}
             
             {/* 回答確定後、結果表示前 */}
-            {hasSubmitted && !showResult && (
+            {hasSubmitted && !showResult && allAnswered && (
               <div className="mt-4">
                 <Button
                   onClick={handleShowResult}
