@@ -403,8 +403,8 @@ function App() {
       return
     }
     
-    if (existingTeams && existingTeams.length >= 15) {
-      alert('チーム数が上限（15チーム）に達しています。既存のチームを選択してください。')
+    if (existingTeams && existingTeams.length >= 20) {
+      alert('チーム数が上限（20チーム）に達しています。既存のチームを選択してください。')
       return
     }
     
