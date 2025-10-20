@@ -316,6 +316,8 @@ function App() {
           },
           (payload) => {
             console.log('クイズ中メンバー更新:', payload)
+            console.log('has_answered_current:', payload.new.has_answered_current)
+            // メンバー情報を再取得
             fetchTeamMembers()
           }
         )
