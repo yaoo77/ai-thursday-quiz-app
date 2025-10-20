@@ -232,6 +232,7 @@ function App() {
   const [selectedAnswer, setSelectedAnswer] = useState(null) // 選択中の回答
   const [hasSubmitted, setHasSubmitted] = useState(false) // 回答を確定したか
   const [showResult, setShowResult] = useState(false) // 結果を表示するか
+  const [forcedAnswer, setForcedAnswer] = useState(false) // 強制的に回答したか
 
   // チーム一覧を取得
   useEffect(() => {
@@ -348,6 +349,7 @@ function App() {
                 setHasSubmitted(false)
                 setShowResult(false)
                 setShowFeedback(false)
+                setForcedAnswer(false)
               }
             }
           }
@@ -641,6 +643,7 @@ function App() {
     setHasSubmitted(false)
     setShowResult(false)
     setShowFeedback(false)
+    setForcedAnswer(false)
     setCurrentQuestion(nextQuestion)
   }
   
@@ -1209,6 +1212,9 @@ function App() {
                         .update({ has_answered_current: true })
                         .eq('team_id', selectedTeam.id)
                       
+                      // 強制回答フラグを設定
+                      setForcedAnswer(true)
+                      
                       // 結果を表示
                       handleShowResult()
                     }
@@ -1262,20 +1268,33 @@ function App() {
                 {/* 結果表示後のみ次の問題ボタンを表示 */}
                 {showResult && (
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                    <Button
-                      onClick={() => handleNextQuestion(false)}
-                      disabled={!allAnswered}
-                      className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-xs sm:text-sm py-2 sm:py-3"
-                    >
-                      次の問題へ {!allAnswered && `(待機中: ${totalMembers - answeredCount}人)`}
-                    </Button>
-                    <Button
-                      onClick={() => handleNextQuestion(true)}
-                      variant="destructive"
-                      className="w-full sm:flex-1 text-xs sm:text-sm py-2 sm:py-3"
-                    >
-                      強制的に次へ
-                    </Button>
+                    {forcedAnswer ? (
+                      // 強制回答後は「次の問題へ」ボタンのみ表示（常に有効）
+                      <Button
+                        onClick={() => handleNextQuestion(true)}
+                        className="w-full bg-green-600 hover:bg-green-700 text-xs sm:text-sm py-2 sm:py-3"
+                      >
+                        次の問題へ
+                      </Button>
+                    ) : (
+                      // 通常は2つのボタンを表示
+                      <>
+                        <Button
+                          onClick={() => handleNextQuestion(false)}
+                          disabled={!allAnswered}
+                          className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-xs sm:text-sm py-2 sm:py-3"
+                        >
+                          次の問題へ {!allAnswered && `(待機中: ${totalMembers - answeredCount}人)`}
+                        </Button>
+                        <Button
+                          onClick={() => handleNextQuestion(true)}
+                          variant="destructive"
+                          className="w-full sm:flex-1 text-xs sm:text-sm py-2 sm:py-3"
+                        >
+                          強制的に次へ
+                        </Button>
+                      </>
+                    )}
                   </div>
                 )}
                 
