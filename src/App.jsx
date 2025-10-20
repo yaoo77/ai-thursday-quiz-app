@@ -1198,7 +1198,16 @@ function App() {
                 <Button
                   onClick={async () => {
                     if (window.confirm(`まだ${totalMembers - answeredCount}人が回答していません。強制的に回答を確定しますか？`)) {
+                      // マスター自身の回答を確定
                       await handleConfirmAnswer()
+                      
+                      // 全メンバーのhas_answered_currentをtrueに設定（強制的に回答済みにする）
+                      await supabase
+                        .from('members')
+                        .update({ has_answered_current: true })
+                        .eq('team_id', selectedTeam.id)
+                      
+                      // 結果を表示
                       handleShowResult()
                     }
                   }}
@@ -1211,19 +1220,27 @@ function App() {
             )}
             
             {/* 回答待ち状態（メンバー） */}
-            {!isMaster && selectedAnswer !== null && !showResult && !allAnswered && (
+            {!isMaster && selectedAnswer !== null && !showResult && !allAnswered && !hasSubmitted && (
               <div className="mt-4 text-center p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-800">回答完了！マスターが「回答する」を押すまで待機中... ({answeredCount} / {totalMembers}人)</p>
               </div>
             )}
             
-            {/* 「結果を見る」ボタン（メンバーのみ、常に表示） */}
-            {!isMaster && selectedAnswer !== null && !showResult && (
+            {/* 「結果を見る」ボタン（メンバーのみ、選択後または強制回答後に表示） */}
+            {!isMaster && (selectedAnswer !== null || allAnswered) && !showResult && (
               <div className="mt-4">
                 <Button
                   onClick={async () => {
                     if (!hasSubmitted) {
-                      await handleConfirmAnswer()
+                      // 選択している場合のみ回答を確定
+                      if (selectedAnswer !== null) {
+                        await handleConfirmAnswer()
+                      } else {
+                        // 選択していない場合は不正解として記録
+                        setHasSubmitted(true)
+                        setLastAnswerCorrect(false)
+                        // データベースを更新（既にマスターが強制的に更新済みのはず）
+                      }
                     }
                     handleShowResult()
                   }}
