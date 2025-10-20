@@ -173,14 +173,14 @@ const QUIZ_DATA = [
   {
     id: 16,
     type: 'image',
-    question: 'どっちがGemini 2.5 Proでコーディングしたものでしょうか？\nテーマは「スーパーマリオのゲーム」',
+    question: 'どっちがGemini 2.5 Proでコーディングしたものでしょうか？\nテーマは「ドラゴン」',
     image: quiz16,
     answer: 1 // B
   },
   {
     id: 17,
     type: 'image',
-    question: 'どっちがGPT-5でコーディングしたものでしょうか？\nテーマは「ドラゴン」',
+    question: 'どっちがGPT-5でコーディングしたものでしょうか？\nテーマは「スーパーマリオのゲーム」',
     image: quiz17,
     answer: 0 // A
   },
