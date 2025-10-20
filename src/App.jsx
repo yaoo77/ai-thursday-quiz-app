@@ -669,9 +669,19 @@ function App() {
   }
 
   // 選択肢を選択（何度でも変更可能）
-  const handleSelectAnswer = (answerIndex) => {
+  const handleSelectAnswer = async (answerIndex) => {
     if (hasSubmitted) return
+    
+    const isFirstSelection = selectedAnswer === null
     setSelectedAnswer(answerIndex)
+    
+    // 初めて選択した時のhas_answered_currentを更新（回答状況表示用）
+    if (isFirstSelection && currentMember) {
+      await supabase
+        .from('members')
+        .update({ has_answered_current: true })
+        .eq('id', currentMember.id)
+    }
   }
   
   // 回答を確定（マスターが「回答する」を押した時）
@@ -690,13 +700,7 @@ function App() {
     setLastAnswerCorrect(correct)
     setHasSubmitted(true)
     
-    // マスターモード: 回答済みフラグを更新
-    if (currentMember) {
-      await supabase
-        .from('members')
-        .update({ has_answered_current: true })
-        .eq('id', currentMember.id)
-    }
+    // has_answered_currentは既に選択時に更新済み
   }
   
   // 結果を表示する
@@ -1297,11 +1301,6 @@ function App() {
                     )}
                   </div>
                 )}
-                
-                {/* 回答状況表示 */}
-                <div className="text-center text-xs sm:text-sm text-yellow-800">
-                  <p>回答状況: {answeredCount} / {totalMembers}人</p>
-                </div>
               </div>
             )}
             
