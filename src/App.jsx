@@ -1275,17 +1275,29 @@ function App() {
               <div className="mt-4">
                 <Button
                   onClick={async () => {
-                    if (!hasSubmitted) {
-                      // 選択している場合のみ回答を確定
-                      if (selectedAnswer !== null) {
-                        await handleConfirmAnswer()
-                      } else {
-                        // 選択していない場合は不正解として記録
+                    // 選択している場合は正解判定を行う
+                    if (selectedAnswer !== null) {
+                      const currentQuiz = QUIZ_DATA[currentQuestion]
+                      const correct = selectedAnswer === currentQuiz.answer
+                      
+                      if (!hasSubmitted) {
+                        // まだ回答を確定していない場合のみスコアを更新
+                        setAnswers([...answers, { question: currentQuestion, answer: selectedAnswer, correct }])
+                        if (correct) {
+                          setScore(score + 1)
+                        }
                         setHasSubmitted(true)
-                        setLastAnswerCorrect(false)
-                        // データベースを更新（既にマスターが強制的に更新済みのはず）
+                      }
+                      
+                      setLastAnswerCorrect(correct)
+                    } else {
+                      // 選択していない場合は不正解
+                      setLastAnswerCorrect(false)
+                      if (!hasSubmitted) {
+                        setHasSubmitted(true)
                       }
                     }
+                    
                     handleShowResult()
                   }}
                   disabled={!allAnswered}
