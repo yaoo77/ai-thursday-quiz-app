@@ -340,7 +340,17 @@ function App() {
             console.log('クイズ中チーム更新:', payload)
             // マスターが問題を進めたら同期
             if (payload.new.current_question !== undefined && !isMaster) {
-              const newQuestion = payload.new.current_question - 1 // DBは1始まり、アプリは0始まり
+              const dbQuestion = payload.new.current_question
+              
+              // クイズ終了を検知
+              if (dbQuestion > QUIZ_DATA.length) {
+                console.log('クイズ終了検知! 結果画面に遷移')
+                // メンバー自身のスコアを更新して結果画面に遷移
+                handleQuizComplete(score)
+                return
+              }
+              
+              const newQuestion = dbQuestion - 1 // DBは1始まり、アプリは0始まり
               if (newQuestion !== currentQuestion) {
                 console.log('問題進行検知! newQuestion:', newQuestion)
                 setCurrentQuestion(newQuestion)
@@ -616,7 +626,12 @@ function App() {
     const nextQuestion = currentQuestion + 1
     
     if (nextQuestion >= QUIZ_DATA.length) {
-      // クイズ終了
+      // クイズ終了: current_questionを特別な値に設定してメンバーに通知
+      await supabase
+        .from('teams')
+        .update({ current_question: QUIZ_DATA.length + 1 })
+        .eq('id', selectedTeam.id)
+      
       await handleQuizComplete(score)
       return
     }
