@@ -1179,13 +1179,24 @@ function App() {
             
             {/* マスターの「回答する」ボタン */}
             {isMaster && hasSubmitted && !showResult && (
-              <div className="mt-4">
+              <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <Button
                   onClick={handleShowResult}
                   disabled={!allAnswered}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3"
+                  className="w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-xs sm:text-sm py-2 sm:py-3"
                 >
                   {allAnswered ? '回答する' : `回答する (待機中: ${totalMembers - answeredCount}人)`}
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (window.confirm(`まだ${totalMembers - answeredCount}人が回答していません。強制的に回答を確定しますか？`)) {
+                      handleShowResult()
+                    }
+                  }}
+                  variant="destructive"
+                  className="w-full sm:flex-1 text-xs sm:text-sm py-2 sm:py-3"
+                >
+                  強制的に回答する
                 </Button>
               </div>
             )}
