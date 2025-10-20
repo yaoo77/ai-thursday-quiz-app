@@ -663,15 +663,20 @@ function App() {
     alert('マスター権限を引き継ぎました！')
   }
 
-  // 選択肢を選択して回答確定
-  const handleSelectAnswer = async (answerIndex) => {
+  // 選択肢を選択（何度でも変更可能）
+  const handleSelectAnswer = (answerIndex) => {
     if (hasSubmitted) return
+    setSelectedAnswer(answerIndex)
+  }
+  
+  // 回答を確定（マスターが「回答する」を押した時）
+  const handleConfirmAnswer = async () => {
+    if (hasSubmitted || selectedAnswer === null) return
     
     const currentQuiz = QUIZ_DATA[currentQuestion]
-    const correct = answerIndex === currentQuiz.answer
+    const correct = selectedAnswer === currentQuiz.answer
     
-    setSelectedAnswer(answerIndex)
-    setAnswers([...answers, { question: currentQuestion, answer: answerIndex, correct }])
+    setAnswers([...answers, { question: currentQuestion, answer: selectedAnswer, correct }])
     
     if (correct) {
       setScore(score + 1)
@@ -1178,18 +1183,22 @@ function App() {
             )}
             
             {/* マスターの「回答する」ボタン */}
-            {isMaster && hasSubmitted && !showResult && (
+            {isMaster && selectedAnswer !== null && !hasSubmitted && (
               <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <Button
-                  onClick={handleShowResult}
+                  onClick={async () => {
+                    await handleConfirmAnswer()
+                    handleShowResult()
+                  }}
                   disabled={!allAnswered}
                   className="w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-xs sm:text-sm py-2 sm:py-3"
                 >
                   {allAnswered ? '回答する' : `回答する (待機中: ${totalMembers - answeredCount}人)`}
                 </Button>
                 <Button
-                  onClick={() => {
+                  onClick={async () => {
                     if (window.confirm(`まだ${totalMembers - answeredCount}人が回答していません。強制的に回答を確定しますか？`)) {
+                      await handleConfirmAnswer()
                       handleShowResult()
                     }
                   }}
@@ -1202,17 +1211,22 @@ function App() {
             )}
             
             {/* 回答待ち状態（メンバー） */}
-            {!isMaster && hasSubmitted && !showResult && !allAnswered && (
+            {!isMaster && selectedAnswer !== null && !showResult && !allAnswered && (
               <div className="mt-4 text-center p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-800">回答完了！マスターが「回答する」を押すまで待機中... ({answeredCount} / {totalMembers}人)</p>
               </div>
             )}
             
             {/* 「結果を見る」ボタン（メンバーのみ、常に表示） */}
-            {!isMaster && hasSubmitted && !showResult && (
+            {!isMaster && selectedAnswer !== null && !showResult && (
               <div className="mt-4">
                 <Button
-                  onClick={handleShowResult}
+                  onClick={async () => {
+                    if (!hasSubmitted) {
+                      await handleConfirmAnswer()
+                    }
+                    handleShowResult()
+                  }}
                   disabled={!allAnswered}
                   className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white py-3"
                 >
