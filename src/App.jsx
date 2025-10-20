@@ -1177,43 +1177,67 @@ function App() {
               </div>
             )}
             
-            {/* 回答待ち状態 */}
-            {hasSubmitted && !showResult && !allAnswered && (
-              <div className="mt-4 text-center p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-800">回答完了！他のメンバーを待っています... ({answeredCount} / {totalMembers}人)</p>
-              </div>
-            )}
-            
-            {/* 回答確定後、結果表示前 */}
-            {hasSubmitted && !showResult && allAnswered && (
+            {/* マスターの「回答する」ボタン */}
+            {isMaster && hasSubmitted && !showResult && (
               <div className="mt-4">
                 <Button
                   onClick={handleShowResult}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white py-3"
+                  disabled={!allAnswered}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3"
                 >
-                  結果を見る
+                  {allAnswered ? '回答する' : `回答する (待機中: ${totalMembers - answeredCount}人)`}
                 </Button>
               </div>
             )}
             
-            {isMaster && showResult && (
+            {/* 回答待ち状態（メンバー） */}
+            {!isMaster && hasSubmitted && !showResult && !allAnswered && (
+              <div className="mt-4 text-center p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">回答完了！マスターが「回答する」を押すまで待機中... ({answeredCount} / {totalMembers}人)</p>
+              </div>
+            )}
+            
+            {/* 「結果を見る」ボタン（メンバーのみ、常に表示） */}
+            {!isMaster && hasSubmitted && !showResult && (
+              <div className="mt-4">
+                <Button
+                  onClick={handleShowResult}
+                  disabled={!allAnswered}
+                  className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white py-3"
+                >
+                  {allAnswered ? '結果を見る' : `結果を見る (待機中: ${totalMembers - answeredCount}人)`}
+                </Button>
+              </div>
+            )}
+            
+            {/* マスターコントロール（常に表示） */}
+            {isMaster && hasSubmitted && (
               <div className="space-y-3 mt-6 p-3 sm:p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
                 <p className="text-xs sm:text-sm font-semibold text-yellow-900 text-center">マスターコントロール</p>
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  <Button
-                    onClick={() => handleNextQuestion(false)}
-                    disabled={!allAnswered}
-                    className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-xs sm:text-sm py-2 sm:py-3"
-                  >
-                    次の問題へ {!allAnswered && `(待機中: ${totalMembers - answeredCount}人)`}
-                  </Button>
-                  <Button
-                    onClick={() => handleNextQuestion(true)}
-                    variant="destructive"
-                    className="w-full sm:flex-1 text-xs sm:text-sm py-2 sm:py-3"
-                  >
-                    強制的に次へ
-                  </Button>
+                
+                {/* 結果表示後のみ次の問題ボタンを表示 */}
+                {showResult && (
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    <Button
+                      onClick={() => handleNextQuestion(false)}
+                      disabled={!allAnswered}
+                      className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-xs sm:text-sm py-2 sm:py-3"
+                    >
+                      次の問題へ {!allAnswered && `(待機中: ${totalMembers - answeredCount}人)`}
+                    </Button>
+                    <Button
+                      onClick={() => handleNextQuestion(true)}
+                      variant="destructive"
+                      className="w-full sm:flex-1 text-xs sm:text-sm py-2 sm:py-3"
+                    >
+                      強制的に次へ
+                    </Button>
+                  </div>
+                )}
+                
+                {/* 回答状況表示 */}
+                <div className="text-center text-xs sm:text-sm text-yellow-800">
+                  <p>回答状況: {answeredCount} / {totalMembers}人</p>
                 </div>
               </div>
             )}
