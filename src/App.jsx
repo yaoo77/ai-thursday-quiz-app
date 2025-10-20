@@ -683,9 +683,15 @@ function App() {
     alert('マスター権限を引き継ぎました！')
   }
 
-  // 選択肢を選択（何度でも変更可能）
+  // 選択肢を選択（マスターが回答するまで変更可能）
   const handleSelectAnswer = async (answerIndex) => {
     if (hasSubmitted) return
+    
+    // マスターが「回答する」または「強制的に回答する」を押した後は変更不可
+    const answeredCount = teamMembers.filter(m => m.has_answered_current).length
+    const totalMembers = teamMembers.length
+    const allAnswered = answeredCount === totalMembers
+    if (!isMaster && allAnswered) return
     
     const isFirstSelection = selectedAnswer === null
     setSelectedAnswer(answerIndex)
