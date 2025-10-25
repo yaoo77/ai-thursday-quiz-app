@@ -803,32 +803,10 @@ function App() {
               </div>
             </div>
             <CardTitle className="text-3xl font-bold text-indigo-900">チームを選択</CardTitle>
-            <CardDescription className="text-lg">既存のチームを選ぶか、新しいチームを作成してください</CardDescription>
+            <CardDescription className="text-lg">参加するチームを選んでください</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
-              <h3 className="text-xl font-semibold">新しいチームを作成</h3>
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="チーム名を入力"
-                  value={newTeamName}
-                  onChange={(e) => setNewTeamName(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleCreateTeam()}
-                  className="text-lg p-6"
-                />
-                <Button 
-                  onClick={handleCreateTeam}
-                  disabled={!newTeamName.trim()}
-                  className="text-lg py-6 px-8 bg-indigo-600 hover:bg-indigo-700"
-                >
-                  作成
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold">既存のチームを選択</h3>
               <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto">
                 {teams.length === 0 ? (
                   <p className="text-gray-500 text-center py-4">まだチームがありません</p>
