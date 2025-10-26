@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input.jsx'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Trophy, User, CheckCircle2, XCircle, Users } from 'lucide-react'
 import { supabase } from './supabaseClient'
+import { AdminPage } from './components/AdminPage.jsx'
 import quiz11 from './assets/quiz11.jpg'
 import quiz12 from './assets/quiz12.jpg'
 import quiz13 from './assets/quiz13.jpg'
@@ -553,9 +554,9 @@ function App() {
       
       alert(`ようこそ、${username}さん！前回のスコア: ${existingMember.score}点`)
       
-      // マスターアカウントの場合は直接クイズへ
+      // マスターアカウントの場合は管理者ページへ
       if (username === 'kawase' && password === '123') {
-        setScreen('quiz')
+        setScreen('admin')
       } else {
         setScreen('waiting')
       }
@@ -1048,6 +1049,11 @@ function App() {
         </Card>
       </div>
     )
+  }
+
+  // 管理者ページ
+  if (screen === 'admin') {
+    return <AdminPage onLogout={handleReset} />
   }
 
   // クイズ画面（既存のコードを使用）
