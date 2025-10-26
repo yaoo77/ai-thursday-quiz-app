@@ -318,9 +318,47 @@ function App() {
           async (payload) => {
             console.log('クイズ中メンバー更新:', payload)
             console.log('has_answered_current:', payload.new.has_answered_current)
+            console.log('master_trigger_result:', payload.new.master_trigger_result)
             
             // メンバー情報を再取得
             await fetchTeamMembers()
+            
+            // マスターが「回答する」を押したら、メンバーに結果を表示
+            if (!isMaster && payload.new.master_trigger_result === true && payload.new.id === currentMember?.id) {
+              console.log('リーダーが回答ボタンを押しました！結果を表示します')
+              
+              // 選択している場合は正解判定を行う
+              if (selectedAnswer !== null) {
+                const currentQuiz = QUIZ_DATA[currentQuestion]
+                const correct = selectedAnswer === currentQuiz.answer
+                
+                if (!hasSubmitted) {
+                  // まだ回答を確定していない場合のみスコアを更新
+                  setAnswers([...answers, { question: currentQuestion, answer: selectedAnswer, correct }])
+                  if (correct) {
+                    setScore(score + 1)
+                  }
+                  setHasSubmitted(true)
+                }
+                
+                setLastAnswerCorrect(correct)
+              } else {
+                // 選択していない場合は不正解
+                setLastAnswerCorrect(false)
+                if (!hasSubmitted) {
+                  setHasSubmitted(true)
+                }
+              }
+              
+              // 結果を表示
+              handleShowResult()
+              
+              // master_trigger_resultフラグをリセット
+              await supabase
+                .from('members')
+                .update({ master_trigger_result: false })
+                .eq('id', currentMember.id)
+            }
             
             // マスターが「強制的に回答する」を押した後、メンバーの選択をロック
             if (!isMaster && !hasSubmitted) {
@@ -1208,6 +1246,13 @@ function App() {
                   onClick={async () => {
                     await handleConfirmAnswer()
                     handleShowResult()
+                    
+                    // 全メンバーに結果表示を通知（master_trigger_resultフラグを更新）
+                    await supabase
+                      .from('members')
+                      .update({ master_trigger_result: true })
+                      .eq('team_id', selectedTeam.id)
+                      .neq('id', currentMember.id) // マスター以外
                   }}
                   disabled={!allAnswered}
                   className="w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-xs sm:text-sm py-2 sm:py-3"
@@ -1231,6 +1276,13 @@ function App() {
                       
                       // 結果を表示
                       handleShowResult()
+                      
+                      // 全メンバーに結果表示を通知
+                      await supabase
+                        .from('members')
+                        .update({ master_trigger_result: true })
+                        .eq('team_id', selectedTeam.id)
+                        .neq('id', currentMember.id) // マスター以外
                     }
                   }}
                   variant="destructive"
@@ -1248,43 +1300,7 @@ function App() {
               </div>
             )}
             
-            {/* 「結果を見る」ボタン（メンバーのみ、選択後または強制回答後に表示） */}
-            {!isMaster && (selectedAnswer !== null || allAnswered) && !showResult && (
-              <div className="mt-4">
-                <Button
-                  onClick={async () => {
-                    // 選択している場合は正解判定を行う
-                    if (selectedAnswer !== null) {
-                      const currentQuiz = QUIZ_DATA[currentQuestion]
-                      const correct = selectedAnswer === currentQuiz.answer
-                      
-                      if (!hasSubmitted) {
-                        // まだ回答を確定していない場合のみスコアを更新
-                        setAnswers([...answers, { question: currentQuestion, answer: selectedAnswer, correct }])
-                        if (correct) {
-                          setScore(score + 1)
-                        }
-                        setHasSubmitted(true)
-                      }
-                      
-                      setLastAnswerCorrect(correct)
-                    } else {
-                      // 選択していない場合は不正解
-                      setLastAnswerCorrect(false)
-                      if (!hasSubmitted) {
-                        setHasSubmitted(true)
-                      }
-                    }
-                    
-                    handleShowResult()
-                  }}
-                  disabled={!allAnswered}
-                  className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white py-3"
-                >
-                  {allAnswered ? '結果を見る' : `結果を見る (待機中: ${totalMembers - answeredCount}人)`}
-                </Button>
-              </div>
-            )}
+            {/* メンバーは自動的に結果が表示されるため、ボタンは不要 */}
             
             {/* マスターコントロール（常に表示） */}
             {isMaster && hasSubmitted && (
