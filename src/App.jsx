@@ -126,14 +126,14 @@ const QUIZ_DATA = [
   {
     id: 10,
     type: 'multiple',
-    question: '【usutakuさんに関するクイズ】\nデジタルハリウッド大学での役職は？',
+    question: '【usutakuさんに関するクイズ】\nMichikusa株式会社の設立日はいつ？',
     options: [
-      '客員教授（Visiting Professor）',
-      '助教（Assistant Professor）',
-      '特任准教授（Specially Appointed Associate Prof.）',
-      '非常勤講師（Lecturer）'
+      '2023年10月26日',
+      '2023年10月27日',
+      '2023年10月28日',
+      '2023年10月29日'
     ],
-    answer: 2
+    answer: 3
   },
   {
     id: 11,
