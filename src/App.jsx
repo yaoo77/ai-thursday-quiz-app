@@ -435,7 +435,7 @@ function App() {
     const { data, error } = await supabase
       .from('teams')
       .select('*')
-      .order('total_score', { ascending: false })
+      .order('name')
     
     if (error) {
       console.error('Error fetching teams:', error)
