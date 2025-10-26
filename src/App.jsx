@@ -435,12 +435,28 @@ function App() {
     const { data, error } = await supabase
       .from('teams')
       .select('*')
-      .order('name')
     
     if (error) {
       console.error('Error fetching teams:', error)
     } else {
-      setTeams(data || [])
+      // チーム名を数値順にソート
+      const sortedTeams = (data || []).sort((a, b) => {
+        // 「Michikusa」を最初に
+        if (a.name === 'Michikusa') return -1
+        if (b.name === 'Michikusa') return 1
+        
+        // 「チーム」で始まる場合、数値部分を抽出して比較
+        const matchA = a.name.match(/\d+/)
+        const matchB = b.name.match(/\d+/)
+        
+        if (matchA && matchB) {
+          return parseInt(matchA[0]) - parseInt(matchB[0])
+        }
+        
+        // それ以外は文字列として比較
+        return a.name.localeCompare(b.name)
+      })
+      setTeams(sortedTeams)
     }
   }
 
