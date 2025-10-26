@@ -114,7 +114,7 @@ const QUIZ_DATA = [
   {
     id: 9,
     type: 'multiple',
-    question: '【usutakuさんに関するクイズ】\nMichikusa株式会社の設立日はいつ？',
+    question: 'Michikusa株式会社の設立日はいつ？',
     options: [
       '2023年10月26日',
       '2023年10月27日',
@@ -126,7 +126,7 @@ const QUIZ_DATA = [
   {
     id: 10,
     type: 'multiple',
-    question: '【usutakuさんに関するクイズ】\nMichikusa株式会社のミッションと社名の由来として、正しい組み合わせはどれ？',
+    question: 'Michikusa株式会社のミッションと社名の由来として、正しい組み合わせはどれ？',
     options: [
       'ミッション：AIの力で時間を作り、人生にミチクサを。\n社名の由来：夏目漱石の小説「道草」から。道草を前向きに捉え、煩雑な作業を最先端技術で解決して時間を創り出す。',
       'ミッション：AIで残業ゼロ、効率最大化。\n社名の由来：創業者が学生時代に道草ばかりしていた経験から。',
